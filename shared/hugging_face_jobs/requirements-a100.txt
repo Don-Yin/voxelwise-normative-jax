@@ -1,0 +1,24 @@
+# Package versions used by the historical A100 comparison.
+jax[cuda12]==0.12.1
+jaxlib==0.12.1
+jax-cuda12-plugin==0.12.1
+jax-cuda12-pjrt==0.12.1
+numpy==2.5.3
+scipy==1.18.1
+nibabel==5.4.2
+ml_dtypes==0.7.0
+opt_einsum==3.4.0
+nvidia-cublas-cu12==12.9.3.13
+nvidia-cuda-runtime-cu12==12.9.79
+nvidia-cudnn-cu12==9.28.1.4
+nvidia-cusolver-cu12==11.7.5.82
+nvidia-cuda-cccl-cu12==12.9.27
+nvidia-cuda-cupti-cu12==12.9.79
+nvidia-cuda-nvcc-cu12==12.9.86
+nvidia-cuda-nvrtc-cu12==12.9.86
+nvidia-cufft-cu12==11.4.1.4
+nvidia-cusparse-cu12==12.5.10.65
+nvidia-nccl-cu12==2.32.6
+nvidia-nvjitlink-cu12==12.9.86
+nvidia-nvshmem-cu12==3.8.0
+packaging==26.3

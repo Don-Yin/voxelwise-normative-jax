@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "voxelwise-normative-jax"
+version = "0.1.0"
+description = "Batched warped Bayesian linear regression for voxelwise normative modelling"
+requires-python = ">=3.12"
+license = "MIT"
+license-files = ["LICENSE"]
+dependencies = [
+    "jax==0.12.1",
+    "numpy==2.5.3",
+    "scipy==1.18.1",
+    "nibabel>=5.4.2",
+    "pyinstrument>=5.1.3",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8.3", "pillow"]
+pcntoolkit = ["pcntoolkit==1.4.0"]
+cuda12 = ["jax[cuda12]==0.12.1"]
+ixi = ["pandas", "xlrd>=2"]
+
+[tool.setuptools.packages.find]
+include = ["shared", "shared.voxelwisenormative", "shared.hugging_face_jobs"]
+namespaces = false
+
+[tool.setuptools.package-data]
+"shared.hugging_face_jobs" = ["container_entry.sh", "requirements-a100.txt"]
+
+[tool.pytest.ini_options]
+addopts = "--import-mode=importlib -p no:cacheprovider"

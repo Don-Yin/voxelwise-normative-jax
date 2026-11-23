@@ -1,0 +1,11 @@
+{
+  "colour": "#dd6b20",
+  "halo": 1.25,
+  "widths": {
+    "box": 0.7,
+    "frame": 0.7,
+    "line": 1
+  },
+  "band_opacity": 0.3,
+  "band_fade": 0.05
+}

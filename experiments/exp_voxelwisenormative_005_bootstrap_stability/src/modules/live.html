@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Voxel stability · live GPU refits</title>
+<style>
+  body { margin:0; background:#fff; }
+  svg { display:block; width:100vw; height:100vh; font:28px Helvetica,Arial,sans-serif; fill:#000; }
+  text { text-anchor:middle; dominant-baseline:central; }
+  .heading { font-size:36px; font-weight:bold; }
+  #title { text-anchor:start; font-size:40px; font-weight:bold; }
+  image { image-rendering:pixelated; }
+</style></head><body>
+<svg viewBox="0 0 1920 1080" role="img" aria-label="Live resampling of the same held-out IXI subject's original flags">
+  <defs><linearGradient id="z"><stop offset="0"/><stop offset=".5"/><stop offset="1"/></linearGradient></defs>
+  <text id="title" x="60" y="55">live GPU refits</text>
+  <text id="status" x="960" y="1030" role="status">Preparing the reference fit…</text>
+  <g id="stage" visibility="hidden">
+    <text id="lh" class="heading">same held-out subject 1</text><text id="rh" class="heading">original flags</text>
+    <image id="reference" aria-label="Original deviation map"/><image id="current" aria-label="Original flags meeting the running recurrence rule"/>
+    <text id="counter" class="heading"></text><line id="track" stroke="#C4C7C9" stroke-width="3"/><circle id="cursor" r="7.2"/>
+    <text id="c-label">completed refits</text><text id="count" class="heading"></text><text id="rule"></text>
+    <text id="key-label">original z-score (SD)</text><rect id="bar" fill="url(#z)"/>
+    <text id="minus">≤−3</text><text id="zero">0</text><text id="plus">≥+3</text>
+  </g>
+</svg>
+<script>
+const el = (id) => document.getElementById(id);
+const attrs = (node,names,values) => names.split(' ').forEach((key,i) => node.setAttribute(key,values[i]));
+const canvas = document.createElement('canvas');
+let shown = -1, layout;
+function place(l) {
+  for (const [id,key] of Object.entries({lh:'left_heading', rh:'right_heading', counter:'counter',
+    'c-label':'counter_label', count:'slice_count', rule:'rule',status:'run_status','key-label':'key_label'})) attrs(el(id),'x y',l[key]);
+  for (const [id,key] of [['reference','slice_box_xywh_px'],['current','stable_box_xywh_px'],['bar','key_bar_xywh']])
+    attrs(el(id),'x y width height',l[key]);
+  const [left,,width] = l.key_bar_xywh;
+  ['minus','zero','plus'].forEach((id,i) => attrs(el(id),'x y',[left+i*width/2,l.key_ticks_y]));
+  document.querySelectorAll('#z stop').forEach((stop,i) => stop.setAttribute('stop-color',l.z_stops[i]));
+  attrs(el('track'),'x1 y1 x2 y2',l.progress_track); el('cursor').setAttribute('fill',l.accent);
+}
+function draw(node,b64,width,height) {
+  const l = layout, [x,y,w,h] = l.tight_crop_source_xywh_voxels;
+  if (width !== l.source_tile_wh[0] || height !== l.source_tile_wh[1]) throw Error('Unexpected axial grid');
+  canvas.width=w; canvas.height=h;
+  const raw=atob(b64), ctx=canvas.getContext('2d'), out=ctx.createImageData(w,h);
+  const dim = [1,3,5].map(i => parseInt(l.mask_grey.slice(i,i+2),16));
+  for (let j=0;j<h;j++) for (let i=0;i<w;i++) {
+    const p=4*(j*w+i), q=3*((j+y)*width+i+x);
+    const rgb = [raw.charCodeAt(q),raw.charCodeAt(q+1),raw.charCodeAt(q+2)];
+    if (rgb.every((v,k) => v===l.source_outside_rgb[k])) continue; // transparent outside, including the ventricles
+    out.data.set(rgb.every((v,k) => v===l.source_hidden_rgb[k]) ? dim : rgb,p); out.data[p+3]=255;
+  }
+  ctx.putImageData(out,0,0); node.setAttribute('href',canvas.toDataURL());
+}
+async function get(path) {
+  const response = await fetch(path,{cache:'no-store'}); if (!response.ok) throw Error(response.status); return response.json();
+}
+async function refresh() {
+  try {
+    if (!layout) { layout=await get('/layout.json'); place(layout); }
+    const s=await get('/state'); el('status').textContent=s.message;
+    if (s.active && s.trial!==shown) {
+      if (shown<0) draw(el('reference'),s.reference,s.width,s.height);
+      draw(el('current'),s.current,s.width,s.height);
+      el('counter').textContent=`${s.trial} / ${s.trials}`;
+      el('rh').textContent=s.trial ? 'recurring original flags' : 'original flags';
+      el('count').textContent=`${s.surviving} of ${s.baseline} on this slice`;
+      el('rule').textContent=s.trial ? `|z| > ${s.cutoff} in ≥${Math.round(100*s.recurrence)}% of completed refits` : `|z| > ${s.cutoff} in the original fit`;
+      const [x,y,right]=layout.progress_track; attrs(el('cursor'),'cx cy',[x+(right-x)*s.trial/s.trials,y]);
+      el('stage').setAttribute('visibility','visible'); shown=s.trial;
+    }
+    if (s.active && s.trial===s.trials) return;
+  } catch { el('status').textContent='Viewer disconnected; showing the last completed state.'; }
+  setTimeout(refresh,400);
+}
+refresh();
+</script></body></html>

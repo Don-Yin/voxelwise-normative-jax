@@ -1,0 +1,10 @@
+method,seconds,max_abs_z_error
+Original (64-bit),7.128,0.001104
+Autodiff (64-bit),4.808,0.001104
+Autodiff (32-bit),2.112,0.002444
+Autodiff (TF32),1.810,2.014599
+Analytic (64-bit),3.704,0.001104
+Analytic (32-bit),1.711,0.003664
+Early stop (64-bit),2.763,0.001104
+Early stop (32-bit),1.655,0.003664
+Early stop (TF32),1.534,1.305047

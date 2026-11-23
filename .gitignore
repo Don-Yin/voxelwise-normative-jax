@@ -1,0 +1,35 @@
+# Generated experiment data and local inputs, including public IXI downloads.
+.results/
+.intermediates/
+/experiments/shared/artifacts/
+/experiments/*/inputs/
+/data/
+*.npy
+*.npz
+*.nii
+*.gz
+*.pt
+*.h5
+*.zip
+*.tar
+*.xls
+*.log
+
+# Python build, test and environments.
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+*.py[cod]
+*.egg-info/
+/build/
+/dist/
+.venv/
+
+# Local settings and release-excluded material.
+.env
+.env.*
+project.env
+/.git/
+/briefs/
+/ideas/
+.DS_Store

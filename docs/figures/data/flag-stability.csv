@@ -1,0 +1,3 @@
+experiment,reference_n,held_out_n,cutoff_abs_z,refits,min_refits,original_flags,count,count_kind
+010,450,113,1.96,64,52,927451,200530,filtered
+011,450,113,1.96,64,64,927451,416394,kept

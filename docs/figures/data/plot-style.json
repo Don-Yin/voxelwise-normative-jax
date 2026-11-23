@@ -1,0 +1,32 @@
+{
+  "axes.facecolor": "white",
+  "axes.labelsize": 10.5,
+  "axes.linewidth": 0.8,
+  "axes.titlesize": 10.5,
+  "axes.titleweight": "bold",
+  "figure.facecolor": "white",
+  "figure.labelsize": 10.5,
+  "figure.labelweight": "normal",
+  "figure.titlesize": 10.5,
+  "figure.titleweight": "bold",
+  "font.family": [
+    "DejaVu Sans",
+    "Hiragino Sans GB"
+  ],
+  "font.size": 10.5,
+  "legend.fontsize": 10.5,
+  "legend.frameon": false,
+  "legend.title_fontsize": 10.5,
+  "lines.linewidth": 1.6,
+  "lines.markersize": 4.5,
+  "pdf.fonttype": 42,
+  "ps.fonttype": 42,
+  "savefig.dpi": 420.0,
+  "savefig.facecolor": "white",
+  "xtick.labelsize": 10.5,
+  "xtick.major.width": 0.8,
+  "xtick.minor.width": 0.6,
+  "ytick.labelsize": 10.5,
+  "ytick.major.width": 0.8,
+  "ytick.minor.width": 0.6
+}

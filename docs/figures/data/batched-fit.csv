@@ -1,0 +1,6 @@
+measure,category,value,n_voxels,n_held_out
+wall_seconds,cpu,577.19939866598,165402,113
+wall_seconds,a100,7.051070476009045,165402,113
+abs_z_difference,median,8.858715215137591e-7,1000,113
+abs_z_difference,p99,0.00006086273368543138,1000,113
+abs_z_difference,max,0.001104178963275304,1000,113

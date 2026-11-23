@@ -1,0 +1,5 @@
+dataset,method,measured_seconds,measured_voxels,mask_voxels,reference_n,held_out_n,warm_repeats,pinned_max_abs_z_difference
+ixi,pcntoolkit,88.44047588802641,256,165402,450,113,,
+ixi,jax_float64,2.778708201018162,165402,165402,450,113,3,0.0011041787114474122
+synthetic,pcntoolkit,188.2123144150246,24,165402,50000,113,,
+synthetic,jax_float64,302.0310311949579,165402,165402,50000,113,3,

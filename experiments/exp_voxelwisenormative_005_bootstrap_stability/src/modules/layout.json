@@ -1,0 +1,19 @@
+{
+  "description": "Shared geometry for the live window and the registered, time-compressed replay on slide 26. Coordinate origin is the top left of the full slide.",
+  "slide_px": [1920, 1080],
+  "loop_top_px": 80,
+  "slice_box_xywh_px": [220, 180, 552, 664],
+  "stable_box_xywh_px": [1148, 180, 552, 664],
+  "tight_crop_source_xywh_voxels": [26, 1, 69, 83],
+  "source_tile_wh": [122, 86],
+  "source_outside_rgb": [24, 36, 51],
+  "source_hidden_rgb": [63, 77, 93],
+  "mask_grey": "#CCD0D2",
+  "z_stops": ["#276EB4", "#E7E8E1", "#BA3037"],
+  "type_px": {"label": 28, "body": 36, "native_window_title": 40},
+  "ink": "#000000", "accent": "#2B6CB0",
+  "left_heading": [496, 131], "right_heading": [1424, 131],
+  "counter": [960, 450], "counter_label": [960, 555], "progress_track": [837, 507, 1083, 507],
+  "slice_count": [1424, 896], "rule": [1424, 944], "run_status": [960, 1030],
+  "key_label": [496, 893], "key_bar_xywh": [336, 925, 320, 18], "key_ticks_y": 978
+}

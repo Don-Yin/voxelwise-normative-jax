@@ -1,0 +1,68 @@
+{
+  "recipe_id": "reader-facing-mni-z-seven-v1",
+  "plane": "axial",
+  "order": "inferior-to-superior",
+  "n_slices": 7,
+  "requested_mni_z_mm": [
+    -34.0,
+    -20.0,
+    -6.0,
+    8.0,
+    22.0,
+    36.0,
+    50.0
+  ],
+  "resolved_voxel_indices": [
+    19,
+    26,
+    33,
+    40,
+    47,
+    54,
+    61
+  ],
+  "resolved_mni_z_mm": [
+    -34.0,
+    -20.0,
+    -6.0,
+    8.0,
+    22.0,
+    36.0,
+    50.0
+  ],
+  "grid_shape": [
+    91,
+    109,
+    91
+  ],
+  "grid_affine": [
+    [
+      -2.0,
+      0.0,
+      0.0,
+      90.0
+    ],
+    [
+      0.0,
+      2.0,
+      0.0,
+      -126.0
+    ],
+    [
+      0.0,
+      0.0,
+      2.0,
+      -72.0
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "tolerance_voxels": 0.5,
+  "image_path": "experiments/shared/artifacts/ixi-grey-matter-voxel-matrix-v1/mask.nii.gz",
+  "image_sha256": "3adc14b9c2681fc7a461e520c73933c1f50498b65ea6b13445fcb66b80529caf",
+  "source": "paper-preprocessing-domain-gap/experiments/shared/axial_slices.py"
+}
