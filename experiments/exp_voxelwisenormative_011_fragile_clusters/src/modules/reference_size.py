@@ -9,7 +9,7 @@ from pathlib import Path
 import numpy as np
 
 from shared.voxelwisenormative.artifacts import sha256
-from shared.voxelwisenormative.basis import SITES
+from shared.voxelwisenormative.cohort import IXI_SITES
 
 from .inputs import MIN_HITS, N_REFITS, N_TRAIN, SEED, THRESHOLD, Cohort
 from .publish import table
@@ -49,8 +49,8 @@ def subset_report(pool: Cohort, subset: Cohort, samples: np.ndarray) -> dict:
             "reference_age_range": [float(subset.reference_ages.min()), float(subset.reference_ages.max())],
             "reference_pool_age_range": [float(pool.reference_ages.min()), float(pool.reference_ages.max())],
             "reference_age_quartiles": np.percentile(subset.reference_ages, [25, 50, 75]).tolist(),
-            "reference_site_counts": {s: int((subset.reference_sites == s).sum()) for s in SITES},
-            "draw_site_minimum": {s: int((drawn == s).sum(axis=1).min()) for s in SITES},
+            "reference_site_counts": {s: int((subset.reference_sites == s).sum()) for s in IXI_SITES},
+            "draw_site_minimum": {s: int((drawn == s).sum(axis=1).min()) for s in IXI_SITES},
             "design": "age, sex, site; the frozen basis; original fit and 64 draws of the N-person reference",
             "original_fit": "one fit on all N references, no resampling: original_flags_packed"}
 

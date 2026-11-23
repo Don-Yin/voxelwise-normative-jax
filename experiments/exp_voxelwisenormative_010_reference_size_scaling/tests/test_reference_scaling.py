@@ -44,7 +44,7 @@ class DesignTest(unittest.TestCase):
 
     def test_nested_stratified_chains_and_fixed_holdout(self):
         cohort = synthetic_cohort(450)
-        sites = cohort.cov["site"]
+        sites = cohort.sites
         chains = []
         for seed in CHAINS:
             sets = [set(nested_train(sites, cohort.train, n, seed)) for n in (25, 50, 100, 200, 450)]

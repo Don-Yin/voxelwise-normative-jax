@@ -14,10 +14,10 @@ from shared.voxelwisenormative.artifacts import (
     VOXEL_MATRIX,
     resolve,
 )
-from shared.voxelwisenormative.basis import SITES, Basis, pinned_agreement
+from shared.voxelwisenormative.basis import Basis
 from shared.voxelwisenormative.batch_job import require_batch_job
 from shared.voxelwisenormative.batched_blr import design
-from shared.voxelwisenormative.cohort import load_covariates, standardise
+from shared.voxelwisenormative.cohort import IXI_SITES, load_covariates, pinned_agreement, standardise
 
 logger = logging.getLogger(__name__)
 N_TRAIN, N_TEST, N_VOXELS, N_REFITS = 450, 113, 165_402, 64
@@ -94,10 +94,10 @@ def synthetic(n_train: int = 40, n_test: int = 8, voxels: int = 300, refits: int
     rng = np.random.default_rng(13)
     total = n_train + n_test
     age, male = rng.uniform(20, 86, total), rng.random(total) < 0.5
-    sex, site = np.where(male, "M", "F"), np.resize(np.asarray(SITES), total)
-    basis = Basis.fit(age[:n_train], sex[:n_train], site[:n_train])
-    phi = basis.apply(age, sex, site)
-    mean = 0.5 - 0.003 * (age - 50) + 0.02 * male + 0.015 * (site == SITES[0])
+    x, site = np.column_stack((age, male)), np.resize(np.asarray(IXI_SITES), total)
+    basis = Basis.fit(x[:n_train], site[:n_train], batch_levels=IXI_SITES)
+    phi = basis.apply(x, site)
+    mean = 0.5 - 0.003 * (age - 50) + 0.02 * male + 0.015 * (site == IXI_SITES[0])
     values = (mean[:, None] + rng.uniform(0.03, 0.08, voxels) * rng.gamma(3.0, 1.0, (total, voxels))).astype(np.float32)
     rows, digest = draws(np.arange(n_train), refits, verify=False)
     lam, G, H, seconds = rotated(phi[:n_train], phi[n_train:], rows)

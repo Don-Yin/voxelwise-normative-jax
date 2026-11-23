@@ -10,7 +10,7 @@ from pathlib import Path
 
 import numpy as np
 
-from shared.voxelwisenormative.basis import Basis, covariate_rows
+from shared.voxelwisenormative.basis import Basis
 from shared.voxelwisenormative.batched_blr import N_ITER, Design, design
 from src.utils.measure import peak_rss_bytes, publish, runtime
 
@@ -40,7 +40,7 @@ def chunk_width(n: int) -> int:
 
 def prepare(cohort: Cohort, rows: np.ndarray, voxels: np.ndarray, basis: Basis, precision: str, chunk: int) -> Prepared:
     """Fit response scaling on this draw in float64, then store data at fit precision."""
-    phi_train, phi_test = [basis.apply(*covariate_rows(cohort.cov, sel)) for sel in (rows, cohort.test)]
+    phi_train, phi_test = (basis.apply(cohort.x[sel], cohort.sites[sel]) for sel in (rows, cohort.test))
     rotated = design(phi_train, phi_test)
     # Row-major like the device arrays: a Fortran-order block costs ~0.4 s of transposing copies per whole-mask fit.
     y = np.empty((len(rows), len(voxels)), dtype=precision)

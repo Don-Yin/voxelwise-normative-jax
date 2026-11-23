@@ -1,4 +1,4 @@
-"""the IXI cohort: verified grey matter matrix, covariates, site-stratified split and scaling."""
+"""Verified IXI cohort inputs and train-only response scaling."""
 
 from __future__ import annotations
 
@@ -7,6 +7,9 @@ import csv
 import numpy as np
 
 from .artifacts import VOXEL_MATRIX, resolve
+from .basis import Basis
+
+IXI_SITES = ("HH", "Guys", "IOP")  # trailing column order of the frozen PCNtoolkit design
 
 
 def load_covariates() -> dict[str, np.ndarray]:
@@ -38,8 +41,36 @@ def site_split(sites: np.ndarray, seed: int, test_fraction: float = 0.2) -> np.n
     return test
 
 
-def standardise(gm: np.ndarray, test: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-    """train and test float64 values scaled by the training mean and sd (ddof 0, as PCNtoolkit)."""
-    train = gm[~test].astype(np.float64)
+def ixi_covariates(cov: dict[str, np.ndarray]) -> np.ndarray:
+    """Encode the IXI age and male-indicator columns used in the frozen design."""
+    return np.column_stack((cov["age"], cov["sex"] == "M"))
+
+
+def pinned_agreement(cov, reference) -> float:
+    """Check the original IXI split's design against the archived PCNtoolkit arrays."""
+    test = reference["test"]
+    x, sites = ixi_covariates(cov), cov["site"]
+    if test.dtype != bool or test.shape != (len(x),) or not test.any() or test.all():
+        raise ValueError(f"invalid frozen IXI split: {test.shape=}, {test.dtype=}")
+    observed = set(sites[~test])
+    if observed != set(IXI_SITES):
+        raise ValueError(f"expected training IXI sites {IXI_SITES}, got {observed}")
+    basis = Basis.fit(x[~test], sites[~test], batch_levels=IXI_SITES)
+    phi = basis.apply(x, sites)
+    errors = []
+    for key, rows in (("Phi_train", ~test), ("Phi_test", test)):
+        actual, expected = phi[rows], reference[key]
+        if actual.shape != expected.shape:
+            raise ValueError(f"{key} has shape {expected.shape}, reproduced shape is {actual.shape}")
+        errors.append(np.max(np.abs(expected - actual)))
+    error = float(np.max(errors))
+    if not error <= 1e-12:
+        raise ValueError(f"reproduced covariate basis differs from experiment 002 by {error:g}")
+    return error
+
+
+def standardise(responses: np.ndarray, test: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Scale float64 train and test responses by the training mean and population standard deviation."""
+    train = responses[~test].astype(np.float64)
     mean, sd = train.mean(0), train.std(0)
-    return (train - mean) / sd, (gm[test].astype(np.float64) - mean) / sd
+    return (train - mean) / sd, (responses[test].astype(np.float64) - mean) / sd

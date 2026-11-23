@@ -8,8 +8,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from .artifacts import PCNTOOLKIT_REFERENCE, VOXEL_MATRIX, resolve
-from .basis import pinned_agreement
-from .cohort import load_covariates, standardise
+from .cohort import load_covariates, pinned_agreement, standardise
 from .template_grid import TemplateGrid
 
 logger = logging.getLogger(__name__)

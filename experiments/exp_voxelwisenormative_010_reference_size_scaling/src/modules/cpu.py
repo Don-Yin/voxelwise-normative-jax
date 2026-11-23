@@ -11,7 +11,6 @@ from unittest.mock import patch
 
 import numpy as np
 
-from shared.voxelwisenormative.basis import covariate_rows
 from src.utils.measure import peak_rss_bytes, publish, runtime
 
 from .cohorts import Cohort, load_cohort, mask_sample
@@ -50,17 +49,15 @@ def worker(cell: Cell, width: int, out: Path, cohort: Cohort | None = None) -> P
     voxels = mask_sample(width)
     names = [f"v{v}" for v in voxels]
     attrs = {"covariates": ["age", "sex"], "batch_effect_dims": ["site"], "response_vars": names}
-    x = np.column_stack((cohort.cov["age"], cohort.cov["sex"] == "M"))
+    rows = (cohort.train, cohort.test)
     raw = cohort.responses(cohort.train, voxels)
     train, test = (
-        pcn.NormData.from_ndarrays(tag, x[rows], y.astype(np.float64), cohort.cov["site"][rows, None],
-                                  attrs=attrs)
-        for tag, rows, y in zip(("train", "test"), (cohort.train, cohort.test), raw, strict=True)
+        pcn.NormData.from_ndarrays(tag, cohort.x[sel], y.astype(np.float64), cohort.sites[sel, None], attrs=attrs)
+        for tag, sel, y in zip(("train", "test"), rows, raw, strict=True)
     )
     del raw
     basis = cohort.basis()
-    phi_train = basis.apply(*covariate_rows(cohort.cov, cohort.train))
-    phi_test = basis.apply(*covariate_rows(cohort.cov, cohort.test))
+    phi_train, phi_test = (basis.apply(cohort.x[sel], cohort.sites[sel]) for sel in rows)
     template = pcn.BLR(name="blr", fixed_effect=True, warp_name="WarpSinhArcsinh",
                        l_bfgs_b_epsilon=EPSILON, optimizer="l-bfgs-b",
                        basis_function_mean=pcn.BsplineBasisFunction(basis_column=0, degree=3, nknots=5))

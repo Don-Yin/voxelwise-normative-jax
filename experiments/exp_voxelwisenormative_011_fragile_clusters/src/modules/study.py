@@ -9,11 +9,11 @@ from pathlib import Path
 
 import numpy as np
 
-from shared.voxelwisenormative.basis import SITES
 from shared.voxelwisenormative.batched_blr import N_ITER, Design, make_fitter
 from shared.voxelwisenormative.bootstrap_score import Score
 from shared.voxelwisenormative.bootstrap_score import cuda_scorer as a100_scorer
 from shared.voxelwisenormative.bootstrap_score import scores_for as score_selection
+from shared.voxelwisenormative.cohort import IXI_SITES
 from shared.voxelwisenormative.ixi_folds import row_digest
 
 from .clusters import ClusterGrid, bootstrap_ranking, contrast_ranking, ranked
@@ -65,17 +65,17 @@ def validate(data: Cohort) -> None:
             or data.phi_train.shape != (counts[0], 12) or data.phi_test.shape != (counts[1], 12)
             or np.intersect1d(data.train_rows, data.test_rows).size):
         raise ValueError(f"inconsistent split/design/mask: {data.train.shape=}, {data.test.shape=}, {counts=}, {n=}")
-    categories = data.reference_sites[:, None] == np.asarray(SITES)
-    if set(data.reference_sites) != set(SITES) or not np.array_equal(data.phi_train[:, -len(SITES):], categories):
+    categories = data.reference_sites[:, None] == np.asarray(IXI_SITES)
+    if set(data.reference_sites) != set(IXI_SITES) or not np.array_equal(data.phi_train[:, -len(IXI_SITES):], categories):
         raise ValueError("expected the frozen design to end with three matching one-hot site columns")
-    test_categories = data.phi_test[:, -len(SITES):]
+    test_categories = data.phi_test[:, -len(IXI_SITES):]
     if not (np.isin(test_categories, (0, 1)).all() and (test_categories.sum(axis=1) == 1).all()):
         raise ValueError("invalid site indicator columns in the held-out design")
 
 
 def scores_for(data: Cohort, rows: np.ndarray, scorer: Score, *, include_site: bool) -> np.ndarray:
     """Scale on selected training rows only; predict every held-out scan with one fit; the signed z of each scan and voxel."""
-    stop = data.phi_train.shape[1] if include_site else data.phi_train.shape[1] - len(SITES)
+    stop = data.phi_train.shape[1] if include_site else data.phi_train.shape[1] - len(IXI_SITES)
     return score_selection(data.phi_train[rows, :stop], data.train[rows], data.phi_test[:, :stop], data.test, scorer)
 
 

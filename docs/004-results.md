@@ -4,12 +4,12 @@
 
 [exp_010](../experiments/exp_voxelwisenormative_010_reference_size_scaling/docs/details.md) timed fit and score for a 165,402-voxel mask and 113 held-out rows. [timing table](figures/data/speed.csv)
 
-| reference design | PCNtoolkit sample on one CPU core | projected full mask | measured on one A100, 64-bit | projected time ÷ measured time |
-|---|---|---|---|---|
-| IXI, 450 scans | 88.440 s / 256 voxels | 15.873 h | 2.779 s | about 20,600× |
-| synthetic, 50,000 rows | 188.212 s / 24 voxels | 360.309 h | 302.031 s | about 4,300× |
+| reference design | PCNtoolkit sample on one CPU core | projected full mask | measured on one A100, 64-bit | where the A100 ran | projected time ÷ measured time |
+|---|---|---|---|---|---|
+| IXI, 450 scans | 88.440 s / 256 voxels | 15.873 h | 2.779 s | university HPC cluster | about 20,600× |
+| synthetic, 50,000 rows | 188.212 s / 24 voxels | 360.309 h | 302.031 s | Hugging Face Jobs | about 4,300× |
 
-PCNtoolkit timings include fit and prediction, not setup and imports. the A100 values are medians of three warm fits, including transfers and score collection but not compilation or input setup. multiply CPU seconds per sampled voxel by the full mask width, then compare in the same units. we did not time a full-mask single-core fit. the figure offsets the two markers within each design for legibility and does not connect the designs.
+both CPU samples ran on one Intel Icelake core of the cluster. PCNtoolkit timings include fit and prediction, not setup and imports. the A100 values are medians of three warm fits, including transfers and score collection but not compilation or input setup. multiply CPU seconds per sampled voxel by the full mask width, then compare in the same units. we did not time a full-mask single-core fit. the figure offsets the two markers within each design for legibility and does not connect the designs.
 
 ## numerical agreement
 

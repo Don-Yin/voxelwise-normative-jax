@@ -1,6 +1,6 @@
 # figures
 
-regenerate the result images with Matplotlib 3.10 or later. the [standard builder](result/standard.py) reads only the small aggregate tables below. no scans, fitted arrays or private plotting modules are needed.
+regenerate the result images with Matplotlib 3.10 or later. the [standard builder](result/standard.py) reads the small aggregate tables below and uses the [PCNtoolkit icon](../assets/pcntoolkit-icon.png) in experiment 010. no scans, fitted arrays or private plotting modules are needed.
 
 ```sh
 python -m pip install 'matplotlib>=3.10'

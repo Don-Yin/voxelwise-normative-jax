@@ -1,7 +1,34 @@
 """Comparable elapsed-time and device-memory panels for the IXI benchmarks."""
 
-from style import BLUE, RED, TEAL, JAX_BASELINE, PACKAGE, PCNTOOLKIT, canvas, categories, key, panel, provenance, rows
+from hashlib import sha256
+from pathlib import Path
+
+from style import BLUE, RED, TEAL, JAX_BASELINE, PACKAGE, canvas, categories, key, panel, provenance, rows
 from zoom import attach_zoom
+
+PCNTOOLKIT_ICON = Path(__file__).resolve().parents[2] / "assets" / "pcntoolkit-icon.png"
+PROJECTION_ICON_PT = 11
+
+
+def _projection_icon(image, xy, *, xycoords="data"):
+    """Use a dashed red frame to distinguish a projection from a measurement."""
+    from matplotlib.offsetbox import AnnotationBbox, OffsetImage
+
+    return AnnotationBbox(
+        OffsetImage(image, zoom=PROJECTION_ICON_PT / image.shape[0], interpolation="antialiased"),
+        xy, xycoords=xycoords, zorder=5, fontsize=PROJECTION_ICON_PT, pad=0.11,
+        bboxprops={"facecolor": "none", "edgecolor": RED, "linewidth": 0.9, "linestyle": (0, (2.8, 1.8))},
+    )
+
+
+class _ProjectionIconHandler:
+    """Draw the same framed icon in the legend's handle coordinates."""
+
+    def legend_artist(self, _legend, orig_handle, _fontsize, handlebox):
+        xy = (handlebox.width / 2 - handlebox.xdescent, handlebox.height / 2 - handlebox.ydescent)
+        mark = _projection_icon(orig_handle.offsetbox.get_data(), xy, xycoords=handlebox.get_transform())
+        handlebox.add_artist(mark)
+        return mark
 
 
 def variants(width):
@@ -65,6 +92,9 @@ def voxel_scaling(width):
 
 def reference_scaling(width):
     """Compare two designs without joining them, and show IXI flag recurrence separately."""
+    from matplotlib.image import imread
+
+    icon = imread(PCNTOOLKIT_ICON)
     timing, flags = "speed.csv", "flag-stability.csv"
     inputs = {(r["dataset"], r["method"]): r for r in rows(timing)}
     cases = ("ixi", "synthetic")
@@ -80,25 +110,32 @@ def reference_scaling(width):
         whole = fig.add_axes((0.125, 0.501, 0.375, 0.360))
         near = fig.add_axes((0.612, 0.501, 0.265, 0.360))
         bars = fig.add_axes((0.125, 0.225, 0.752, 0.16))
-        cpu, = whole.plot([-0.09, 0.91], [s / 3600 for s in projection], ls="none", zorder=3, **PCNTOOLKIT)
-        gpu, = whole.plot([0.09, 1.09], [s / 3600 for s in measured], ls="none", zorder=3, **PACKAGE)
-        near.plot([0.09, 1.09], measured, ls="none", **PACKAGE)
+        # Dodge the two marks within each workload; leave the projection outside the zoom frame.
+        offset = 0.19
+        cpu = [whole.add_artist(_projection_icon(icon, (i - offset, s / 3600))) for i, s in enumerate(projection)]
+        measured_x = [i + offset for i in range(len(cases))]
+        gpu, = whole.plot(measured_x, [s / 3600 for s in measured], ls="none", zorder=3, **PACKAGE)
+        near.plot(measured_x, measured, ls="none", **PACKAGE)
         for ax in (whole, near):
             ax.set_xticks([0, 1], ["IXI 450", "synthetic 50k"])
         whole.set(xlim=(-0.57, 1.57), ylim=(-37, 407), yticks=[0, 100, 200, 300, 400], ylabel="hours")
-        near.set(xlim=(-0.40, 1.48), ylim=(-29, 370), yticks=[0, 100, 200, 300], ylabel="seconds")
+        near.set(xlim=(-0.07, 1.46), ylim=(-29, 370), yticks=[0, 100, 200, 300], ylabel="seconds")
         near.yaxis.tick_right()
         near.yaxis.set_label_position("right")
-        panel(whole, "whole-mask fit and score")
+        panel(whole, "fit and score the full mask")
         panel(near, "zoom on A100")
         bars.barh([0], [kept], height=0.59, color=BLUE)
         bars.barh([0], [failed], height=0.59, left=kept, color=RED, hatch="////", edgecolor="white", lw=0.4)
         bars.set(xlim=(0, 100), ylim=(-0.49, 0.50), yticks=[], xticks=[0, 25, 50, 75, 100], xlabel="original flags (%)")
         panel(bars, "flag recurrence at 450 IXI references", grid="x")
         bars.spines["left"].set_visible(False)
-        key(fig, [cpu, gpu], ["PCNtoolkit: one-core projection", "this package: A100 measurement"], x=0.51)
+        fig.legend([cpu[0], gpu], ["PCNtoolkit: one-core projection", "this package: A100 measurement"],
+                   handler_map={cpu[0]: _ProjectionIconHandler()}, loc="upper center", bbox_to_anchor=(0.51, 0.998),
+                   ncol=2, fontsize=9, handlelength=1.5, handletextpad=0.55,
+                   columnspacing=1.6, borderpad=0.5, frameon=False)
         key(fig, bars.containers, [f"{kept:.1f}% in ≥52 of 64 refits", f"{failed:.1f}% in <52 of 64 refits"], y=0.081)
         zoom = attach_zoom(whole, near, whole_units_per_detail_unit=1 / 3600)
     return fig, provenance("measured and projected whole-mask timings and pooled refit recurrence", timing, flags,
                            cpu_projection_seconds=projection, device_median_seconds=measured, zoom=zoom,
-                           recurrence_run="experiment 010", original_flags=int(recurrence["original_flags"]))
+                           recurrence_run="experiment 010", original_flags=int(recurrence["original_flags"]),
+                           asset_sha256={"docs/assets/pcntoolkit-icon.png": sha256(PCNTOOLKIT_ICON.read_bytes()).hexdigest()})

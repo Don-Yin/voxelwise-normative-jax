@@ -17,8 +17,7 @@ from src.modules.reference_size import age_stratified, rank_fetched
 from src.modules.study import run, run_per_refit
 
 from shared.voxelwisenormative.artifacts import PCNTOOLKIT_REFERENCE, resolve
-from shared.voxelwisenormative.basis import SITES
-from shared.voxelwisenormative.cohort import load_covariates
+from shared.voxelwisenormative.cohort import IXI_SITES, load_covariates
 
 
 def frozen_reference() -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -56,7 +55,7 @@ class FrozenReferenceTest(unittest.TestCase):
             self.assertEqual(len(np.unique(keep)), n)
             self.assertTrue(np.all(np.diff(keep) > 0))
             self.assertEqual((ages[keep].min(), ages[keep].max()), (ages.min(), ages.max()))
-            self.assertEqual(set(sites[keep]), set(SITES))
+            self.assertEqual(set(sites[keep]), set(IXI_SITES))
             edges = np.arange(n - 1) * 448 // (n - 2)
             inner = np.sort(rank[keep])[1:-1] - 1
             np.testing.assert_array_equal(np.searchsorted(edges, inner, side="right") - 1, np.arange(n - 2))
@@ -103,7 +102,7 @@ class SyntheticRunTest(unittest.TestCase):
         bits = np.unpackbits(arrays["refit_flags_packed"], axis=-1, count=320, bitorder="little")
         np.testing.assert_array_equal(bits.sum(axis=0), arrays["recurrence_counts"])
         self.assertEqual((receipt["references"], receipt["reference_n"], receipt["reference_pool"]), (12, 12, 24))
-        self.assertEqual(set(receipt["reference_site_counts"]), set(SITES))
+        self.assertEqual(set(receipt["reference_site_counts"]), set(IXI_SITES))
         original = np.unpackbits(arrays["original_flags_packed"], axis=-1, count=320, bitorder="little").astype(bool)
         removed = (original & (arrays["recurrence_counts"] < 52)).sum(axis=1)
         header, *rows = [line.split("\t") for line in lines]

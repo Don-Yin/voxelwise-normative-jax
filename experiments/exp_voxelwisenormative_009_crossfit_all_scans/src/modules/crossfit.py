@@ -14,14 +14,9 @@ from shared.voxelwisenormative.artifacts import (
     resolve,
     sha256,
 )
-from shared.voxelwisenormative.basis import (
-    SITES,
-    Basis,
-    covariate_rows,
-    pinned_agreement,
-)
+from shared.voxelwisenormative.basis import Basis
 from shared.voxelwisenormative.batched_blr import design, fit_chunks, make_fitter
-from shared.voxelwisenormative.cohort import load_covariates, standardise
+from shared.voxelwisenormative.cohort import IXI_SITES, ixi_covariates, load_covariates, pinned_agreement, standardise
 
 FOLDS = 5
 SHAPE = (563, 165_402)
@@ -33,7 +28,7 @@ def assignments(sites: np.ndarray, seed: int) -> np.ndarray:
     random = np.random.default_rng(seed)
     fold = np.full(len(sites), -1, dtype=np.int8)
     offset = 0
-    for site in SITES:
+    for site in IXI_SITES:
         rows = random.permutation(np.flatnonzero(sites == site))
         fold[rows] = (np.arange(len(rows)) + offset) % FOLDS
         offset += len(rows)
@@ -54,16 +49,17 @@ def run(results: Path, run_name: str, seed: int, chunk: int, plan_only: bool, fo
     gm = np.load(paths['gm.npy'], mmap_mode='r', allow_pickle=False)
     if gm.shape != SHAPE:
         raise ValueError(f'expected voxel matrix {SHAPE}, got {gm.shape}')
-    fold = assignments(cov['site'], seed)
+    x, sites = ixi_covariates(cov), cov['site']
+    fold = assignments(sites, seed)
     splits = []
     for k in range(FOLDS):
         held = fold == k
         train = ~held
-        basis = Basis.fit(*covariate_rows(cov, train))
-        phi = basis.apply(*covariate_rows(cov, slice(None)))
+        basis = Basis.fit(x[train], sites[train], batch_levels=IXI_SITES)
+        phi = basis.apply(x, sites)
         splits.append((held, design(phi[train], phi[held]), basis))
     table = [{'fold': k, 'n_train': int((fold != k).sum()), 'n_test': int((fold == k).sum()),
-              'site_test': {s: int(((fold == k) & (cov['site'] == s)).sum()) for s in SITES}}
+              'site_test': {s: int(((fold == k) & (sites == s)).sum()) for s in IXI_SITES}}
              for k in range(FOLDS)]
     report = {'input_artifact': VOXEL_MATRIX, 'shape': list(SHAPE), 'seed': seed, 'input_dtype': str(gm.dtype),
               'row_order': 'same as IXI covariates.tsv', 'held_out_folds': table, 'design_max_abs_error_vs_exp002': agreement,

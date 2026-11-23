@@ -9,7 +9,8 @@ import nibabel as nib
 import numpy as np
 
 from shared.voxelwisenormative.artifacts import VOXEL_MATRIX, resolve, sha256
-from shared.voxelwisenormative.basis import SITES, Basis
+from shared.voxelwisenormative.basis import Basis
+from shared.voxelwisenormative.cohort import IXI_SITES
 from shared.voxelwisenormative.ixi_folds import (
     DRAW_DIGEST,
     N_FOLDS,
@@ -93,11 +94,12 @@ def synthetic(fold: int = 0) -> Cohort:
     mask = np.ones((6, 7, 8), dtype=bool)
     mask[0, :2, :] = False
     n, held, v = 24, 4, int(mask.sum())
-    site = np.array([*list(SITES) * 8, "Guys", "HH", "IOP", "Guys"])
+    site = np.array(IXI_SITES * 8 + ("Guys", "HH", "IOP", "Guys"))
     age = rng.uniform(24, 73, n + held)
-    sex = np.tile(["F", "M"], (n + held) // 2)
-    basis = Basis.fit(age[:n], sex[:n], site[:n])
-    phi = basis.apply(age, sex, site)
+    male = np.tile([False, True], (n + held) // 2)
+    x = np.column_stack((age, male))
+    basis = Basis.fit(x[:n], site[:n], batch_levels=IXI_SITES)
+    phi = basis.apply(x, site)
     values = rng.normal(size=(n + held, v)).astype(np.float32)
     values[site == "Guys", :27] += 1.1
     region = np.zeros_like(mask)

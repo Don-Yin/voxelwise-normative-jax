@@ -21,7 +21,13 @@ no IXI scans, derivatives or fitted arrays are distributed here. the data terms 
 | mark | use or permission | source |
 |---|---|---|
 | voxel-brain icon | project artwork, used for the banner and social card | [icon](figures/logo/icon.png) |
-| open square, labelled PCNtoolkit | ordinary plot marker; no logo use terms were verified | [plot source](figures/result/standard.py) |
+| [PCNtoolkit icon](assets/pcntoolkit-icon.png) | [GPL-3.0](assets/pcntoolkit-gpl-3.0.txt); side padding cropped | [upstream icon](https://github.com/predictive-clinical-neuroscience/PCNtoolkit/blob/e9469dc70ad761301b3e970b5585f167373203db/doc/_static/pcn-icon.png) · [upstream licence](https://github.com/predictive-clinical-neuroscience/PCNtoolkit/blob/e9469dc70ad761301b3e970b5585f167373203db/LICENSE) |
 | filled circle, labelled this package | ordinary plot marker for measured A100 time | [plot source](figures/result/standard.py) |
 
-names identify the software and hardware used; their appearance does not imply endorsement. figures contain no third-party logos.
+the upstream PCNtoolkit repository uses GPL-3.0. we found no separate icon terms.
+
+cropping the transparent side padding on 2026-11-23 changed 460 × 460 px to 385 × 460 px.
+
+the MIT licence applies only to this repository’s own work.
+
+names and marks identify the software and hardware used; they do not imply endorsement.

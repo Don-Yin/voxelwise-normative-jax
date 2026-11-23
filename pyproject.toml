@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "voxelwise-normative-jax"
 version = "0.1.0"
-description = "Batched warped Bayesian linear regression for voxelwise normative modelling"
+description = "Batched warped Bayesian linear regression for normative modelling of numeric responses"
 requires-python = ">=3.12"
 license = "MIT"
 license-files = ["LICENSE"]
