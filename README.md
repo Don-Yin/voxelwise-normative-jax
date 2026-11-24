@@ -4,6 +4,9 @@
 
 batched JAX normative modelling for numeric response matrices, with or without imaging.
 
+<a href="docs/assets/speed-race.gif"><img alt="Projected fit-and-score race: 152 PCNtoolkit CPU cores finish one model while one A100 finishes an estimated 227." src="docs/assets/speed-race.gif" width="100%"></a>
+<p>the race scales a <a href="docs/figures/data/speed.csv">single-core cluster measurement</a> to 152 cores (376.2 s projected). the 227 icons show estimated completions at 1.655 s per run, the <a href="docs/figures/data/speed-and-error.csv">measured median for a 32-bit A100 fit and score</a> on the cluster. the 0.43 GiB <a href="docs/figures/data/speed-memory.csv">live memory peak</a> is from a separate A100 run and excludes unused reserved memory. the static plot uses separate 64-bit A100 timings. <a href="docs/licences.md#data">image licence</a></p>
+
 <a href="docs/assets/exp_voxelwisenormative_010-result.png"><img alt="whole-mask fit times and original flag recurrence" src="docs/assets/exp_voxelwisenormative_010-result.png" width="600"></a>
 
 on one NVIDIA A100, whole-mask fits were about 20,600× faster at 450 IXI references and 4,300× at 50,000 synthetic references against projected single-core PCNtoolkit times. the 450-reference A100 time was measured on a university HPC cluster, the 50,000-reference A100 time on a rented [Hugging Face Jobs](https://huggingface.co/docs/huggingface_hub/guides/jobs) A100. [all experiments](experiments/README.md)

@@ -14,7 +14,7 @@
 |---|---|---|
 | IXI — Information eXtraction from Images (EPSRC GR/S21533/02), Brain Development | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/) | [IXI Dataset](https://brain-development.org/ixi-dataset/) |
 
-no IXI scans, derivatives or fitted arrays are distributed here. the data terms are separate from the software licence.
+the [speed race GIF](assets/speed-race.gif) is adapted from Brain Development's [IXI Dataset](https://brain-development.org/ixi-dataset/) and is licensed under [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/); the share-alike terms apply to that rendered image file, not the MIT-licensed code. no scans, fitted arrays or z-score maps are distributed as data files.
 
 ## figure marks
 
