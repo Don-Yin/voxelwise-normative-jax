@@ -4,6 +4,8 @@ title: "voxelwise-normative-jax"
 type: software
 version: 0.1.0
 license: MIT
+doi: 10.5281/zenodo.24498156
+repository-code: "https://github.com/Don-Yin/voxelwise-normative-jax"
 authors:
   - family-names: Yin
     given-names: Don

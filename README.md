@@ -4,6 +4,8 @@
 
 batched JAX normative modelling for numeric response matrices, with or without imaging.
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24498156.svg)](https://doi.org/10.5281/zenodo.24498156)
+
 <a href="docs/assets/speed-race.gif"><img alt="Projected fit-and-score race: 152 PCNtoolkit CPU cores finish one model while one A100 finishes an estimated 227." src="docs/assets/speed-race.gif" width="100%"></a>
 <p>the race scales a <a href="docs/figures/data/speed.csv">single-core cluster measurement</a> to 152 cores (376.2 s projected). the 227 icons show estimated completions at 1.655 s per run, the <a href="docs/figures/data/speed-and-error.csv">measured median for a 32-bit A100 fit and score</a> on the cluster. the 0.43 GiB <a href="docs/figures/data/speed-memory.csv">live memory peak</a> is from a separate A100 run and excludes unused reserved memory. the static plot uses separate 64-bit A100 timings. <a href="docs/licences.md#data">image licence</a></p>
 
