@@ -66,6 +66,17 @@ def hugging_face_job(env: Mapping[str, str] | None = None, platform_name: str | 
     return job.job_id if job is not None and job.platform == "hugging_face" else None
 
 
+def require_hugging_face_wrapper() -> str:
+    """Require the launcher marker to agree with the platform job ID, with no Slurm variables."""
+    job = hugging_face_job()
+    platform_id = os.environ.get("JOB_ID")
+    slurm = sorted(name for name in os.environ if name.startswith("SLURM_"))
+    if job is None or job != platform_id or slurm:
+        raise RuntimeError(f"real IXI refits require the Hugging Face wrapper: marker={job!r}, "
+                           f"JOB_ID={platform_id!r}, Slurm variables={slurm}; locally use --synthetic")
+    return job
+
+
 def expected_environment(env: Mapping[str, str] | None = None, platform_name: str | None = None) -> str:
     """The interpreter environment name exp_011's run.py accepts: container_entry.sh's in a Hugging Face job, else voxelwise-normative-jax.
 

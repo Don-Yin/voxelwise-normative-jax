@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # shellcheck shell=bash
-# The one in-container entry of the Hugging Face A100 jobs of exp_004 (mechanism timing), exp_010, exp_011 and exp_013.
+# The shared in-container entry of the Hugging Face A100 jobs.
 #
 #   container_entry.sh [--check-only] [--allow-unpinned a,b] --run-name NAME [--script PATH] <experiment-dir> [args...]
 #
 # NAME must start with hugging-face-a100-, so these results never mix with Slurm's a100-<jobid> ones. The script
 # (default run.py) runs inside the experiment directory as `python SCRIPT --no-profile ARGS`; @RUN_NAME@ in ARGS becomes
-# NAME. HF_PROFILE_RUN=1 instead keeps the script's default profiler and installs pyinstrument 5.1.3. Nothing goes
+# NAME. HF_PROFILE_RUN=1 keeps the default profiler and installs pyinstrument 5.1.3; exp_018 and 019 default to it. Nothing goes
 # through slurm-profile. Mounts: /code (read-only, build_input.py's directory) and /out (the
 # read-write bucket); the jobs run on a writable copy of /code, and the copy's .results/ is copied to /out/NAME/.
 # --check-only installs the packages and imports every experiment but fits nothing; it is the cpu-basic check. It is not
@@ -109,6 +109,8 @@ if [[ ! $cpus =~ ^[1-9][0-9]*$ ]]; then
     fi
 fi
 threads=$cpus
+expected_gpus=1
+profile_default=0
 ixi=0 # 1: the job always opens real IXI input, so a real run needs the marker
 unset JAX_PLATFORMS XLA_PYTHON_CLIENT_MEM_FRACTION
 case $experiment in
@@ -117,6 +119,10 @@ case $experiment in
     exp_voxelwisenormative_011_fragile_clusters)
         needs=" numpy nibabel "; ixi=1; export JAX_PLATFORMS=cuda ;;
     exp_voxelwisenormative_013_gpu_headroom) needs=" numpy "; ixi=1; export JAX_PLATFORMS=cuda XLA_PYTHON_CLIENT_MEM_FRACTION=0.95 ;; # gpu-headroom-a100.sh
+    exp_voxelwisenormative_018_four_gpu_refits)
+        threads=1; needs=" numpy scipy "; ixi=1; expected_gpus=4; profile_default=1; export JAX_PLATFORMS=cuda ;;
+    exp_voxelwisenormative_019_zbin_stability)
+        threads=4; needs=" numpy scipy "; ixi=1; profile_default=1; export JAX_PLATFORMS=cuda ;;
     *) die "no environment row for $experiment" ;;
 esac
 export OMP_NUM_THREADS=$threads OPENBLAS_NUM_THREADS=$threads MKL_NUM_THREADS=$threads NUMEXPR_NUM_THREADS=$threads
@@ -130,8 +136,13 @@ step=preflight
 [[ ! -e $OUT/$run_name ]] || die "refusing to overwrite $OUT/$run_name"
 if ((LOCAL_TEST == 0 && dry_run == 0)); then
     gpus=$(nvidia-smi -L) || die "nvidia-smi failed: this job needs the A100"
-    [[ $gpus == *A100* && $(wc -l <<< "$gpus") -eq 1 ]] || die "expected exactly one A100, nvidia-smi -L says: $gpus"
-    export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
+    [[ $(grep -c '^GPU .*A100' <<< "$gpus") -eq $expected_gpus && $(wc -l <<< "$gpus") -eq $expected_gpus ]] \
+        || die "expected exactly $expected_gpus A100 GPU(s), nvidia-smi -L says: $gpus"
+    if [[ -z ${CUDA_VISIBLE_DEVICES:-} ]]; then
+        CUDA_VISIBLE_DEVICES=0
+        for ((index = 1; index < expected_gpus; index++)); do CUDA_VISIBLE_DEVICES+=,$index; done
+    fi
+    export CUDA_VISIBLE_DEVICES
     if ((ixi)); then
         [[ -n ${HUGGING_FACE_JOB_ID:-} ]] || die "this job opens real IXI input, which its guard allows only with the Hugging Face job marker; JOB_ID is '${JOB_ID:-}', not 24 lowercase hexadecimal characters"
     fi
@@ -151,7 +162,7 @@ log "copied and verified $CODE against INVENTORY.tsv in $SECONDS s"
 step=install
 mapfile -t pins < <(sed -e '/^[[:space:]]*#/d' -e '/^[[:space:]]*$/d' -e 's/[[:space:]]*#.*//' "$WORK/code/shared/hugging_face_jobs/requirements-a100.txt")
 run_flags=(--no-profile)
-if [[ ${HF_PROFILE_RUN:-0} == 1 ]]; then
+if [[ ${HF_PROFILE_RUN:-$profile_default} == 1 ]]; then
     pins+=(pyinstrument==5.1.3)
     run_flags=()
 fi

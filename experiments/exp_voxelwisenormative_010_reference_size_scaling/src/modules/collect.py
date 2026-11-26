@@ -9,9 +9,8 @@ import statistics
 from pathlib import Path
 
 from shared.voxelwisenormative.artifacts import resolve
-from src.utils.measure import publish
-
-from .grid import (
+from shared.voxelwisenormative.receipts import publish
+from shared.voxelwisenormative.reference_grid import (
     BENCHMARK,
     BOOT_CASES,
     CPU_CASES,
@@ -25,6 +24,7 @@ from .grid import (
     V_SWEEP,
     Z_THRESHOLD,
 )
+
 from .scaling import cpu_projection, estimate_cost, n_powers, power_fit
 
 PRIOR_SWEEP = "voxelwise-speed-memory-scaling-v1"

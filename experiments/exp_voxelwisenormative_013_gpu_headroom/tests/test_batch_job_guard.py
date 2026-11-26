@@ -15,7 +15,7 @@ from unittest import mock
 
 EXPERIMENT = Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(EXPERIMENT), str(EXPERIMENT.parents[1])]
-inputs = importlib.import_module("src.modules.inputs")
+inputs = importlib.import_module("shared.voxelwisenormative.refit_inputs")
 receipts = importlib.import_module("src.utils.receipts")
 
 HF_ID = "1234567890abcdef12345678"

@@ -9,16 +9,15 @@ from pathlib import Path
 from unittest.mock import patch
 
 import numpy as np
-from src.modules.bootstrap import instability
-from src.modules.cohorts import (
+from shared.voxelwisenormative.reference_bootstrap import instability
+from shared.voxelwisenormative.reference_cohort import (
     bootstrap_draw,
     mask_sample,
     nested_train,
     synthetic_cohort,
 )
-from src.modules.collect import previous_voxel_sweep
-from src.modules.gpu import TRAIN_ELEMENTS_CAP, chunk_width
-from src.modules.grid import (
+from shared.voxelwisenormative.reference_fit import TRAIN_ELEMENTS_CAP, chunk_width
+from shared.voxelwisenormative.reference_grid import (
     BOOT_CASES,
     CHAINS,
     CPU_CASES,
@@ -26,6 +25,7 @@ from src.modules.grid import (
     MASK_VOXELS,
     V_SWEEP,
 )
+from src.modules.collect import previous_voxel_sweep
 from src.modules.scaling import cpu_projection, estimate_cost, power_fit
 
 

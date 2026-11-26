@@ -10,6 +10,8 @@ import resource
 import sys
 from pathlib import Path
 
+from .batch_job import hugging_face_job
+
 logger = logging.getLogger(__name__)
 
 
@@ -19,17 +21,19 @@ def peak_rss_bytes() -> int:
     return int(peak if sys.platform == "darwin" else peak * 1024)
 
 
-def runtime() -> dict:
-    """Identify the hardware, interpreter, thread limit and the Slurm task scope or Hugging Face job."""
-    # the project root is on sys.path only after run.py's main() has started
-    from shared.voxelwisenormative.batch_job import hugging_face_job
-
-    hugging_face = hugging_face_job()  # a Hugging Face job leaves every slurm_* field empty and is recorded here instead
+def job_identity() -> dict:
+    """Identify the machine, interpreter, Slurm task or Hugging Face job."""
+    hugging_face = hugging_face_job()
     return {"machine": platform.machine(), "python": platform.python_version(),
-            "omp_threads": os.environ.get("OMP_NUM_THREADS"), "slurm_job_id": os.environ.get("SLURM_JOB_ID"),
+            "slurm_job_id": os.environ.get("SLURM_JOB_ID"),
             "slurm_array_job_id": os.environ.get("SLURM_ARRAY_JOB_ID"),
             "slurm_array_task_id": os.environ.get("SLURM_ARRAY_TASK_ID"),
             **({"hugging_face_job": hugging_face} if hugging_face else {})}
+
+
+def runtime() -> dict:
+    """Record job identity and thread limit for the reference-size fits."""
+    return {**job_identity(), "omp_threads": os.environ.get("OMP_NUM_THREADS")}
 
 
 def publish(path: Path, report: dict) -> Path:

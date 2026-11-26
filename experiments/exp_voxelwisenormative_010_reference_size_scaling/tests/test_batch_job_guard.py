@@ -12,9 +12,8 @@ import sys
 import unittest
 from unittest import mock
 
-from src.modules import cohorts
-from src.modules.grid import Cell
-from src.utils import measure
+from shared.voxelwisenormative import receipts, reference_cohort
+from shared.voxelwisenormative.reference_grid import Cell
 
 HF_ID = "1234567890abcdef12345678"
 SLURM_ID = "81595615"
@@ -31,13 +30,13 @@ def real_cohort(env: dict[str, str], platform: str) -> None:
         raise Reached
 
     with (mock.patch.dict(os.environ, env, clear=True), mock.patch.object(sys, "platform", platform),
-          mock.patch.object(cohorts, "resolve", lookup)):
-        cohorts.load_cohort(Cell("ixi", 450))
+          mock.patch.object(reference_cohort, "resolve", lookup)):
+        reference_cohort.load_cohort(Cell("ixi", 450))
 
 
 def runtime(env: dict[str, str], platform: str = "linux") -> dict:
     with mock.patch.dict(os.environ, env, clear=True), mock.patch.object(sys, "platform", platform):
-        return measure.runtime()
+        return receipts.runtime()
 
 
 class RealInputGuard(unittest.TestCase):
@@ -70,7 +69,7 @@ class RealInputGuard(unittest.TestCase):
 
     def test_synthetic_cells_never_reach_the_guard(self):
         with mock.patch.dict(os.environ, {}, clear=True), mock.patch.object(sys, "platform", "darwin"):
-            self.assertEqual(cohorts.load_cohort(Cell("synthetic", 450)).train.shape, (450,))
+            self.assertEqual(reference_cohort.load_cohort(Cell("synthetic", 450)).train.shape, (450,))
 
 
 class Receipt(unittest.TestCase):

@@ -6,16 +6,11 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from shared.voxelwisenormative.artifacts import (
-    PCNTOOLKIT_REFERENCE,
-    VOXEL_MATRIX,
-    resolve,
-)
-from shared.voxelwisenormative.basis import Basis
-from shared.voxelwisenormative.batch_job import require_batch_job
-from shared.voxelwisenormative.cohort import IXI_SITES, ixi_covariates, load_covariates, pinned_agreement, site_split
-
-from .grid import CHAINS, COLUMNS_SEED, MASK_VOXELS, N_HELD_OUT, SYNTHETIC_SEED, Cell
+from .artifacts import PCNTOOLKIT_REFERENCE, VOXEL_MATRIX, resolve
+from .basis import Basis
+from .batch_job import require_batch_job
+from .cohort import IXI_SITES, ixi_covariates, load_covariates, pinned_agreement, site_split
+from .reference_grid import CHAINS, COLUMNS_SEED, MASK_VOXELS, N_HELD_OUT, SYNTHETIC_SEED, Cell
 
 
 @dataclass(frozen=True)
@@ -101,8 +96,8 @@ def bootstrap_draw(cohort: Cohort, rng: np.random.Generator) -> np.ndarray:
 
 
 def real_cohort(n: int, chain: int) -> Cohort:
-    """Bind Slurm's real matrix and the verified held-out split without saving any rows."""
-    require_batch_job("real IXI input")  # a Slurm Slurm job, or a Hugging Face job with its marker
+    """Bind the real matrix and verified held-out split without saving any rows."""
+    require_batch_job("real IXI input")
     gm_path = resolve(VOXEL_MATRIX, "gm.npy")["gm.npy"]
     gm = np.load(gm_path, mmap_mode="r", allow_pickle=False)
     if gm.shape != (563, MASK_VOXELS) or gm.dtype != np.float32:

@@ -7,7 +7,7 @@ from collections.abc import Iterable
 
 import numpy as np
 
-from .grid import MASK_VOXELS, TRIALS
+from shared.voxelwisenormative.reference_grid import MASK_VOXELS, TRIALS
 
 
 def power_fit(points: Iterable[tuple[int, float]]) -> dict | None:

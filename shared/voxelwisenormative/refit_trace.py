@@ -7,11 +7,12 @@ import json
 import logging
 import time
 from collections import defaultdict
+from collections.abc import Iterable
 from pathlib import Path
 
 import numpy as np
 
-from .batched import Batcher
+from .refit_batch import Batcher
 
 logger = logging.getLogger(__name__)
 GAP_US = 20.0  # idle gaps longer than this are launch or host-synchronisation stalls, not back-to-back kernels
@@ -50,21 +51,57 @@ def union(spans: list[tuple[float, float]]) -> tuple[float, np.ndarray]:
     return busy + end - start, np.asarray(gaps)
 
 
-def device_busy(path: Path) -> dict:
-    """Union of device stream activity over its own span; also lists every device thread found."""
-    with gzip.open(path, "rt") as handle:
-        data = json.load(handle)
-    events = data["traceEvents"] if isinstance(data, dict) else data
+def hottest_kernels(events: list[dict]) -> dict:
+    """Rank individual GPU kernels and compiler labels separately, excluding host spans and copies."""
+    kernels: dict[tuple[str, str], dict] = {}
+    groups: dict[str, dict] = {}
+    for event in events:
+        args = event.get("args", {})
+        if not args.get("kernel_details"):
+            continue
+        name = event["name"]
+        op = args.get("hlo_op") or name
+        kernel = kernels.setdefault((op, name), {"hlo_op": op, "kernel_name": name, "calls": 0, "total_us": 0.0})
+        group = groups.setdefault(op, {"hlo_op": op, "distinct_kernels": 0, "calls": 0, "total_us": 0.0})
+        for row in (kernel, group):
+            row["calls"] += 1
+            row["total_us"] += float(event["dur"])
+    for op, _ in kernels:
+        groups[op]["distinct_kernels"] += 1
+    total = sum(row["total_us"] for row in groups.values())
+
+    def rank(rows: Iterable[dict]) -> list[dict]:
+        """Return the ten highest totals with their shares of traced kernel time."""
+        return [{**row, "fraction_of_kernel_duration": row["total_us"] / total}
+                for row in sorted(rows, key=lambda row: -row["total_us"])[:10]] if total > 0 else []
+
+    return {"kernel_duration_us": total, "top_kernels": rank(kernels.values()), "top_hlo_groups": rank(groups.values())}
+
+
+def device_busy(path: Path, *, include_kernels: bool = False) -> dict:
+    """Union of device stream activity over its span, with optional ranking of GPU kernels."""
+    try:
+        with gzip.open(path, "rt", encoding="utf-8") as handle:
+            data = json.load(handle)
+        events = data["traceEvents"] if isinstance(data, dict) else data
+    except (OSError, EOFError, UnicodeError, json.JSONDecodeError, KeyError) as error:
+        raise ValueError(f"cannot read Perfetto trace {path}: {error}") from error
     meta = [e for e in events if e.get("ph") == "M"]
     processes = {e["pid"]: e["args"]["name"] for e in meta if e.get("name") == "process_name"}
     threads = {(e["pid"], e["tid"]): e["args"]["name"] for e in meta if e.get("name") == "thread_name"}
     devices = {pid for pid, name in processes.items() if name.startswith("/device:GPU")}
     by_thread: dict[str, list[tuple[float, float]]] = defaultdict(list)
+    stream_events = []
     for e in events:
         if e.get("ph") == "X" and e.get("pid") in devices:
             ts = float(e["ts"])
-            by_thread[threads.get((e["pid"], e["tid"]), f"tid {e['tid']}")].append((ts, ts + float(e.get("dur", 0.0))))
+            thread = threads.get((e["pid"], e["tid"]), f"tid {e['tid']}")
+            by_thread[thread].append((ts, ts + float(e.get("dur", 0.0))))
+            if include_kernels and "Stream" in thread:
+                stream_events.append(e)
     report = {"device_threads": {name: len(spans) for name, spans in sorted(by_thread.items())}}
+    if include_kernels:
+        report.update(hottest_kernels(stream_events))
     spans = sorted(s for name, rows in by_thread.items() if "Stream" in name for s in rows)
     if not spans:
         return {**report, "stream_events": 0}

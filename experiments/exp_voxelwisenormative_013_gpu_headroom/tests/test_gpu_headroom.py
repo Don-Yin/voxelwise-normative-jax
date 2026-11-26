@@ -18,8 +18,9 @@ sys.path[:0] = [str(EXPERIMENT), str(EXPERIMENT.parents[1])]
 
 # The experiment and project roots are put on sys.path first, so these are imported by name.
 read_samples, summarize = (getattr(importlib.import_module("src.modules.gpu_samples"), name) for name in ("read_samples", "summarize"))
-DRAW_DIGEST, draws = (getattr(importlib.import_module("src.modules.inputs"), name) for name in ("DRAW_DIGEST", "draws"))
-device_busy = importlib.import_module("src.modules.trace").device_busy
+inputs = importlib.import_module("shared.voxelwisenormative.refit_inputs")
+DRAW_DIGEST, draws = inputs.DRAW_DIGEST, inputs.draws
+device_busy = importlib.import_module("shared.voxelwisenormative.refit_trace").device_busy
 
 
 class Parsing(unittest.TestCase):

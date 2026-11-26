@@ -9,11 +9,13 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from .inputs import Inputs
+from .refit_inputs import Inputs
 
 logger = logging.getLogger(__name__)
 MEMORY_FIELDS = ("temp_size_in_bytes", "argument_size_in_bytes", "output_size_in_bytes",
                  "alias_size_in_bytes", "generated_code_size_in_bytes")
+THRESHOLD = 1.96
+Z_TOLERANCE = 0.01  # agreement of the original fit with the converged PCNtoolkit reference
 
 
 @dataclass(frozen=True)
@@ -78,8 +80,9 @@ class Batcher:
         import jax
 
         n, nt, d = self.inputs.train.shape[0], self.inputs.test.shape[0], self.inputs.lam.shape[1]
-        specs = [jax.ShapeDtypeStruct(shape, self.dtype) for shape in ((k, d), (k, d, n), (k, nt, d))]
-        specs.append(jax.ShapeDtypeStruct((k, n), np.int32))
+        sharding = jax.sharding.SingleDeviceSharding(self.device)
+        specs = [jax.ShapeDtypeStruct(shape, self.dtype, sharding=sharding) for shape in ((k, d), (k, d, n), (k, nt, d))]
+        specs.append(jax.ShapeDtypeStruct((k, n), np.int32, sharding=sharding))
         report = {}
         for width, i in self.widths().items():
             start = time.perf_counter()
@@ -111,15 +114,18 @@ class Batcher:
         jax.block_until_ready(self.dispatch(draws, list(self.widths().values())))
         return time.perf_counter() - start
 
-    def run(self, draws: np.ndarray) -> Batch:
-        """Time one synchronised batch over the whole mask, then gather z and loop counters to the host."""
+    def run(self, draws: np.ndarray, *, out_z: np.ndarray | None = None) -> Batch:
+        """Time one synchronised batch, then gather z and loop counters, writing z to out_z if supplied."""
         import jax
 
+        shape = (len(draws), self.inputs.test.shape[0], self.inputs.train.shape[1])
+        if out_z is not None and (out_z.shape != shape or out_z.dtype != self.dtype):
+            raise ValueError(f"out_z has {out_z.shape=} {out_z.dtype=}, expected {shape} {self.dtype}")
         epoch, start = time.time(), time.perf_counter()
         outs = self.dispatch(draws)
         jax.block_until_ready(outs)
         ready = time.perf_counter()
-        z = np.empty((len(draws), self.inputs.test.shape[0], self.inputs.train.shape[1]), dtype=self.dtype)
+        z = np.empty(shape, dtype=self.dtype) if out_z is None else out_z
         for (lo, hi), out in zip(self.bounds, outs, strict=True):
             z[:, :, lo:hi] = np.asarray(out[0])
         steps = np.stack([np.asarray(out[1]) for out in outs], axis=1)
@@ -129,3 +135,27 @@ class Batcher:
         if bad.any():
             raise ValueError(f"invalid draw scale at {bad.tolist()} voxels for draws {draws.tolist()}")
         return Batch(z, steps, voxel_steps, (epoch, epoch + ready - start), ready - start, end - ready)
+
+
+def agreement(z: np.ndarray, ref: np.ndarray) -> tuple[bool, int, float, int]:
+    """Bitwise equality, differing elements, max |Δz| and |z|>1.96 disagreements for a finite refit."""
+    bits = np.dtype(f"u{z.dtype.itemsize}")
+    differing = int(np.count_nonzero(z.view(bits) != ref.view(bits)))
+    if not differing:
+        return True, 0, 0.0, 0
+    flips = np.count_nonzero((np.abs(z) > THRESHOLD) != (np.abs(ref) > THRESHOLD))
+    return False, differing, float(np.max(np.abs(z.astype(np.float64, copy=False) - ref))), int(flips)
+
+
+def original_check(batcher: Batcher, inputs: Inputs) -> dict:
+    """Fit every reference row once and check the pinned PCNtoolkit voxels."""
+    batch = batcher.run(np.asarray([len(inputs.rows)]))
+    report = {"seconds_including_first_run": batch.compute_seconds + batch.gather_seconds,
+              "flags": int(np.count_nonzero(np.abs(batch.z) > THRESHOLD)), "pinned_z_max_abs_delta": None}
+    if inputs.pinned_voxels is not None:
+        error = float(np.max(np.abs(batch.z[0][:, inputs.pinned_voxels] - inputs.pinned_z)))
+        if not error <= Z_TOLERANCE:
+            raise ValueError(f"original fit max |Δz| {error:g} against PCNtoolkit exceeds {Z_TOLERANCE}")
+        report["pinned_z_max_abs_delta"] = error
+    logger.info("original fit: %s", report)
+    return report

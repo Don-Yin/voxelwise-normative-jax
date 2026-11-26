@@ -1,6 +1,6 @@
 """Matplotlib-only scale enlargement for adjacent, fixed-layout chart panels."""
 
-from style import settings
+from style import read_json
 
 
 def attach_zoom(whole, detail, *, whole_units_per_detail_unit):
@@ -12,7 +12,7 @@ def attach_zoom(whole, detail, *, whole_units_per_detail_unit):
     from matplotlib.patches import ConnectionPatch, Polygon
     from matplotlib.transforms import Bbox, TransformedBbox
 
-    style = settings("zoom-style.json")
+    style = read_json("zoom-style.json")
     colour, widths = style["colour"], style["widths"]
     fig = whole.figure
 

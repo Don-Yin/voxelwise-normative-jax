@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "workload": "bootstrap",
+  "dataset": "ixi",
+  "n": 450,
+  "n_test": 113,
+  "columns": 165402,
+  "precision": "float64",
+  "device": "NVIDIA A100-SXM4-80GB",
+  "jax": "0.12.1",
+  "chunk": 32768,
+  "chain": 0,
+  "chain_seed": 20261121,
+  "draw_seed": 20261124,
+  "trials": 64,
+  "z_abs_threshold": 1.96,
+  "min_recurring_trials": 52,
+  "pinned_z_max_abs_delta": 0.0011041787114529633,
+  "baseline_flags": 927451,
+  "unstable_flags": 200530,
+  "unstable_fraction": 0.21621627449859884,
+  "held_out_people_with_flags": 113,
+  "per_person_fraction_p10_p50_p90": [
+    0.17516063990956862,
+    0.20689655172413793,
+    0.2720984133228429
+  ],
+  "baseline_abs_z_bins": [
+    {
+      "abs_z_lower": 1.96,
+      "abs_z_upper_exclusive": 2.5,
+      "baseline_flags": 670779,
+      "unstable_flags": 200479,
+      "unstable_fraction": 0.29887489023955727,
+      "held_out_people_with_flags": 113,
+      "per_person_fraction_p10_p50_p90": [
+        0.24268160179781012,
+        0.2813126709206928,
+        0.368343920424746
+      ]
+    },
+    {
+      "abs_z_lower": 2.5,
+      "abs_z_upper_exclusive": 3.1,
+      "baseline_flags": 196897,
+      "unstable_flags": 51,
+      "unstable_fraction": 0.0002590186747385689,
+      "held_out_people_with_flags": 113,
+      "per_person_fraction_p10_p50_p90": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "abs_z_lower": 3.1,
+      "abs_z_upper_exclusive": null,
+      "baseline_flags": 59775,
+      "unstable_flags": 0,
+      "unstable_fraction": 0,
+      "held_out_people_with_flags": 113,
+      "per_person_fraction_p10_p50_p90": [
+        0,
+        0,
+        0
+      ]
+    }
+  ],
+  "platform": "Hugging Face Jobs"
+}

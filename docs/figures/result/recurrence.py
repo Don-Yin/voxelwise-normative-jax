@@ -1,6 +1,7 @@
 """Pooled flag stability and the cost of batching resamples."""
 
-from style import BLUE, JAX_BASELINE, PACKAGE, canvas, key, panel, provenance, rows
+from style import BLUE, JAX_BASELINE, PACKAGE, canvas, key, panel, provenance, read_json, rows
+from zoom import attach_zoom
 
 
 def fragile_clusters(width):
@@ -47,3 +48,34 @@ def refit_batching(width):
     return fig, provenance("refit batching, live memory and disagreement with batch size one", table,
                            refits=64, references=450, held_out=113, mask_voxels=165402,
                            memory="allocator peak live bytes after each pass, cumulative")
+
+
+def stability_bins(width):
+    """Show how pooled recurrence differs by original |z|, with a linear zoom near zero."""
+    table = "zbin-stability.json"
+    data = read_json(table)
+    bins = data["baseline_abs_z_bins"]
+    shares = [100 * row["unstable_flags"] / row["baseline_flags"] for row in bins]
+    pooled = 100 * data["unstable_flags"] / data["baseline_flags"]
+    threshold = data["z_abs_threshold"]
+    labels = [f"{'(' if lo == threshold else '['}{lo:g}, {hi:g})" if hi is not None else f"≥{lo:g}"
+              for lo, hi in ((r["abs_z_lower"], r["abs_z_upper_exclusive"]) for r in bins)]
+    with canvas(width=width, height=5.8) as (fig, backdrop):
+        backdrop.remove()
+        whole = fig.add_axes((0.12, 0.225, 0.43, 0.536))
+        near = fig.add_axes((0.631, 0.225, 0.280, 0.536))
+        whole.plot(range(len(bins)), shares, ls="none", **PACKAGE)
+        near.plot(range(1, len(bins)), shares[1:], ls="none", **PACKAGE)
+        line = whole.axhline(pooled, ls="--", lw=1.1, color=JAX_BASELINE["color"])
+        whole.set(xlim=(-0.53, 2.59), ylim=(-3.5, 38), yticks=[0, 10, 20, 30], ylabel="unstable flags (%)")
+        whole.set_xticks(range(len(bins)), labels)
+        near.set(xlim=(0.61, 2.42), ylim=(-0.004, 0.034), yticks=[0, 0.01, 0.02, 0.03])
+        near.set_xticks(range(1, len(bins)), labels[1:])
+        near.yaxis.tick_right()
+        panel(whole, "pooled by original |z|")
+        panel(near, "zoom on high |z| bins")
+        key(fig, [line], [f"all original flags: {pooled:.1f}%"], y=0.995)
+        fig.supxlabel("original |z| bin", y=0.045)
+        zoom = attach_zoom(whole, near, whole_units_per_detail_unit=1)
+    return fig, provenance("share of original flags with fewer than 52 of 64 recurrences", table,
+                           held_out=data["n_test"], bins=bins, pooled_percent=pooled, zoom=zoom)

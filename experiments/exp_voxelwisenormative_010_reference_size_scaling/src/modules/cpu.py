@@ -11,10 +11,9 @@ from unittest.mock import patch
 
 import numpy as np
 
-from src.utils.measure import peak_rss_bytes, publish, runtime
-
-from .cohorts import Cohort, load_cohort, mask_sample
-from .grid import COLUMNS_SEED, MASK_VOXELS, Cell
+from shared.voxelwisenormative.receipts import peak_rss_bytes, publish, runtime
+from shared.voxelwisenormative.reference_cohort import Cohort, load_cohort, mask_sample
+from shared.voxelwisenormative.reference_grid import COLUMNS_SEED, MASK_VOXELS, Cell
 
 logger = logging.getLogger(__name__)
 VERSION = "1.4.0"

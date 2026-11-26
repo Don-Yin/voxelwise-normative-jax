@@ -7,8 +7,9 @@ import json
 import logging
 from pathlib import Path
 
+from shared.voxelwisenormative.refit_trace import device_busy
+
 from .gpu_samples import read_samples, summarize
-from .trace import device_busy
 
 logger = logging.getLogger(__name__)
 PRECISIONS = ("float32", "float64")

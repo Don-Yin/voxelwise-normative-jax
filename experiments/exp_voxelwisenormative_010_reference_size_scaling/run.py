@@ -44,7 +44,7 @@ def parse_args() -> argparse.Namespace:
 
 def work(args: argparse.Namespace) -> None:
     """Dispatch a single process working at one configuration, or aggregate small receipts."""
-    from src.modules.grid import BOOT_CASES, CPU_CASES, GPU_CASES, Cell, case_at
+    from shared.voxelwisenormative.reference_grid import BOOT_CASES, CPU_CASES, GPU_CASES, Cell, case_at
 
     if args.stage == "smoke":
         out = RESULTS / "json" / "smoke" / f"local-{time.time_ns()}" / f"{args.engine}.json"
@@ -58,7 +58,7 @@ def work(args: argparse.Namespace) -> None:
 
             benchmark(cell, args.precision, out, smoke=True)
         else:
-            from src.modules.bootstrap import worker
+            from shared.voxelwisenormative.reference_bootstrap import worker
 
             worker(cell, 0, out, smoke=True)
         return
@@ -74,7 +74,7 @@ def work(args: argparse.Namespace) -> None:
         cell, precision = case_at(GPU_CASES, args.index)
         benchmark(cell, precision, folder / f"{cell.label}-{precision}.json")
     elif args.stage == "bootstrap":
-        from src.modules.bootstrap import worker
+        from shared.voxelwisenormative.reference_bootstrap import worker
 
         cell, chain = case_at(BOOT_CASES, args.index)
         worker(cell, chain, folder / f"{cell.label}-chain{chain}.json")

@@ -22,7 +22,9 @@ the [speed race GIF](assets/speed-race.gif) is adapted from Brain Development's 
 |---|---|---|
 | voxel-brain icon | project artwork, used for the banner and social card | [icon](figures/logo/icon.png) |
 | [PCNtoolkit icon](assets/pcntoolkit-icon.png) | [GPL-3.0](assets/pcntoolkit-gpl-3.0.txt); side padding cropped | [upstream icon](https://github.com/predictive-clinical-neuroscience/PCNtoolkit/blob/e9469dc70ad761301b3e970b5585f167373203db/doc/_static/pcn-icon.png) · [upstream licence](https://github.com/predictive-clinical-neuroscience/PCNtoolkit/blob/e9469dc70ad761301b3e970b5585f167373203db/LICENSE) |
-| filled circle, labelled this package | ordinary plot marker for measured A100 time | [plot source](figures/result/standard.py) |
+| blue filled circle | measured JAX result from this package | [plot source](figures/result/standard.py) |
+| grey open diamond | measured JAX comparison baseline, including the single A100 in exp_018 | [plot source](figures/result/runtime.py) |
+| grey plus sign | ideal four-device time in exp_018, calculated from the single-device time | [plot source](figures/result/runtime.py) |
 
 the upstream PCNtoolkit repository uses GPL-3.0. we found no separate icon terms.
 

@@ -1,8 +1,8 @@
 """Stage an explicit file allowlist and checksum inventory for a Hugging Face job.
 
 The default stages code only. Experiments 004 and 010 generate synthetic arrays in memory.
-Select `--profile ixi` explicitly to stage a locally prepared, manifest-checked IXI cohort
-and comparison artifact for experiments 011 and 013.
+Select an IXI profile to stage a locally prepared, manifest-checked cohort and reference.
+The 018 and 019 profiles mount only their experiment and omit the mask.
 """
 
 from __future__ import annotations
@@ -16,6 +16,7 @@ import re
 import shutil
 import sys
 from pathlib import Path
+from typing import NamedTuple
 
 logger = logging.getLogger(__name__)
 ROOT = Path(__file__).resolve().parents[2]
@@ -25,23 +26,41 @@ UTILS = ("src/__init__.py", "src/utils/__init__.py", "src/utils/paths.py", "src/
          "src/modules/__init__.py")
 CODE = {
     "004_speed_headroom": (*UTILS, "src/modules/mechanism_timing.py"),
-    "010_reference_size_scaling": ("run.py", *UTILS, "src/utils/measure.py", "src/modules/cohorts.py",
-                                   "src/modules/grid.py", "src/modules/gpu.py"),
+    "010_reference_size_scaling": ("run.py", *UTILS, "src/modules/gpu.py"),
     "011_fragile_clusters": ("run.py", *UTILS, "src/modules/clusters.py", "src/modules/inputs.py",
                              "src/modules/publish.py", "src/modules/reference_size.py", "src/modules/study.py",
                              "src/modules/z_summary.py", "src/modules/reader-facing-axial-grid.json"),
-    "013_gpu_headroom": ("run.py", *UTILS, "src/utils/receipts.py", "src/modules/batched.py",
-                         "src/modules/gpu_samples.py", "src/modules/inputs.py", "src/modules/sweep.py",
-                         "src/modules/trace.py"),
+    "013_gpu_headroom": ("run.py", *UTILS, "src/utils/receipts.py", "src/modules/gpu_samples.py",
+                         "src/modules/sweep.py"),
 }
-SHARED_CODE = ("shared/__init__.py", *(f"shared/voxelwisenormative/{name}.py" for name in (
-    "__init__", "artifacts", "basis", "batch_job", "batched_blr", "bootstrap_score", "cohort", "early_newton",
-    "ixi_folds", "template_grid")))
+KERNEL = ("__init__", "artifacts", "basis", "batch_job", "batched_blr", "cohort", "early_newton", "receipts")
+REFIT = ("refit_batch", "refit_inputs", "refit_trace")
+REFERENCE = ("reference_bootstrap", "reference_cohort", "reference_fit", "reference_grid")
+SHARED_CODE = (*KERNEL, *REFIT, *REFERENCE, "bootstrap_score", "ixi_folds", "template_grid")
 JOB_FILES = ("shared/hugging_face_jobs/container_entry.sh", "shared/hugging_face_jobs/host_record.py",
              "shared/hugging_face_jobs/build_input.py", "shared/hugging_face_jobs/requirements-a100.txt")
 ARTIFACTS = {
     "ixi-grey-matter-voxel-matrix-v1": ("manifest.json", "gm.npy", "covariates.tsv", "mask.nii.gz"),
     "pcntoolkit-blr-reference-n1000-v1": ("manifest.json", "arrays.npz"),
+}
+MASKLESS_IXI = {artifact: tuple(name for name in names if name != "mask.nii.gz") for artifact, names in ARTIFACTS.items()}
+
+
+class StagingProfile(NamedTuple):
+    """Explicit experiment files, shared modules and artifact payloads for one mount."""
+
+    code: dict[str, tuple[str, ...]]
+    modules: tuple[str, ...]
+    artifacts: dict[str, tuple[str, ...]]
+
+
+PROFILES = {
+    "synthetic": StagingProfile(CODE, SHARED_CODE, {}),
+    "ixi": StagingProfile(CODE, SHARED_CODE, ARTIFACTS),
+    "four-gpu-refits": StagingProfile({"018_four_gpu_refits": ("run.py", *UTILS, "src/modules/compare.py")},
+                                     (*KERNEL, *REFIT), MASKLESS_IXI),
+    "zbin-stability": StagingProfile({"019_zbin_stability": ("run.py", *UTILS, "src/modules/zbins.py")},
+                                     (*KERNEL, *REFERENCE), MASKLESS_IXI),
 }
 INVENTORY = "INVENTORY.tsv"
 PRIVATE_SOURCE = re.compile(r"/(?:Users|home|rds)/|hf://|(?:uk|bio)bank", re.IGNORECASE)
@@ -61,13 +80,14 @@ def sha256(path: Path) -> str:
 
 def plan(root: Path, profile: str = "synthetic") -> list[tuple[str, Path, str]]:
     """(destination, source, role) for every file; a missing source is an error naming it."""
+    code, modules, artifacts = PROFILES[profile]
+    shared = ("shared/__init__.py", *(f"shared/voxelwisenormative/{name}.py" for name in modules))
     rows = [(f"{CODE_PREFIX}{name}/{rel}", root / f"{CODE_PREFIX}{name}/{rel}", "code")
-            for name, files in CODE.items() for rel in files]
-    rows += [(rel, root / rel, "code") for rel in SHARED_CODE]
+            for name, files in code.items() for rel in files]
+    rows += [(rel, root / rel, "code") for rel in shared]
     rows += [(rel, root / rel, "hugging-face") for rel in JOB_FILES]
-    if profile == "ixi":
-        rows += [(f"{EXPERIMENTS}/shared/artifacts/{artifact}/{name}", root / EXPERIMENTS / "shared/artifacts" / artifact / name,
-                  "data") for artifact, names in ARTIFACTS.items() for name in names]
+    rows += [(f"{EXPERIMENTS}/shared/artifacts/{artifact}/{name}", root / EXPERIMENTS / "shared/artifacts" / artifact / name,
+              "data") for artifact, names in artifacts.items() for name in names]
     missing = [str(source) for _, source, _ in rows
                if not source.is_file() or any(p.is_symlink() for p in (source, *source.parents) if p != root and root in p.parents)]
     if missing:
@@ -121,12 +141,12 @@ def read_manifest(folder: Path) -> dict:
     return value
 
 
-def check_ixi_data(root: Path) -> list[str]:
+def check_ixi_data(root: Path, artifacts: dict[str, tuple[str, ...]]) -> list[str]:
     """Hashes against the manifests and the matrix header; nothing is loaded whole."""
     import numpy as np
 
     lines = []
-    for artifact, names in ARTIFACTS.items():
+    for artifact, names in artifacts.items():
         base = root / EXPERIMENTS / "shared/artifacts" / artifact
         listed = {item["path"]: item.get("sha256") for item in read_manifest(base)["files"]}
         for name in names[1:]:
@@ -187,8 +207,8 @@ def build(out: Path, root: Path = ROOT, profile: str = "synthetic") -> list[dict
         raise FileExistsError(f"{out} is not empty; a directory a job may be mounting must never change, use a new one")
     rows = plan(root, profile)
     check_names([destination for destination, _, _ in rows])
-    if profile == "ixi":
-        for line in check_ixi_provenance(root) + check_ixi_data(root):
+    if artifacts := PROFILES[profile].artifacts:
+        for line in check_ixi_provenance(root) + check_ixi_data(root, artifacts):
             logger.info("%s", line)
     for destination, source, _ in rows:
         target = out / destination
@@ -206,8 +226,8 @@ def main() -> None:
     parser.add_argument("output", type=Path, help="new or empty directory to fill; with --verify, the directory to check")
     parser.add_argument("--verify", action="store_true", help="only re-check an existing directory against its inventory")
     parser.add_argument("--quiet", action="store_true", help="print only the totals line")
-    parser.add_argument("--profile", choices=("synthetic", "ixi"), default="synthetic",
-                        help="synthetic: no IXI file (exp_004, exp_010 jobs); ixi: with the two IXI artifacts (exp_011, exp_013 jobs)")
+    parser.add_argument("--profile", choices=tuple(PROFILES), default="synthetic",
+                        help="choose an explicit code and artifact allowlist (synthetic stages no IXI files)")
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
     report(verify(args.output) if args.verify else build(args.output, profile=args.profile), quiet=args.quiet)

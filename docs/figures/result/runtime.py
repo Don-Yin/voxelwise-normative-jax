@@ -3,7 +3,7 @@
 from hashlib import sha256
 from pathlib import Path
 
-from style import BLUE, RED, TEAL, JAX_BASELINE, PACKAGE, canvas, categories, key, panel, provenance, rows
+from style import BLUE, RED, TEAL, JAX_BASELINE, PACKAGE, canvas, categories, key, panel, provenance, read_json, rows
 from zoom import attach_zoom
 
 PCNTOOLKIT_ICON = Path(__file__).resolve().parents[2] / "assets" / "pcntoolkit-icon.png"
@@ -139,3 +139,26 @@ def reference_scaling(width):
                            cpu_projection_seconds=projection, device_median_seconds=measured, zoom=zoom,
                            recurrence_run="experiment 010", original_flags=int(recurrence["original_flags"]),
                            asset_sha256={"docs/assets/pcntoolkit-icon.png": sha256(PCNTOOLKIT_ICON.read_bytes()).hexdigest()})
+
+
+def four_gpu_refits(width):
+    """Compare warm wall times with the ideal one-device time divided by four."""
+    table = "four-gpu-refits.json"
+    data = read_json(table)
+    if data["mode"] != "ixi-cuda" or not data["agreement"]["passed"]:
+        raise ValueError(f"{table}: expected a passing IXI run")
+    one = data["one_device"]["wall_seconds"]
+    four = data["four_devices"]["wall_seconds"]
+    ideal = one / 4
+    refits = data["refits"]
+    with canvas(width=width, height=4.85) as (fig, ax):
+        ax.plot(0, one, ls="none", **JAX_BASELINE)
+        ax.plot(1, four, ls="none", **PACKAGE)
+        ax.plot(2, ideal, marker="+", color=JAX_BASELINE["color"], ms=6, ls="none")
+        ax.set(xticks=[0, 1, 2], xticklabels=["1 A100", "4 A100s", "ideal at 4"],
+               xlim=(-0.52, 2.52), ylim=(-8, 168), yticks=[0, 40, 80, 120, 160], ylabel="seconds")
+        panel(ax, f"warm time for {refits} refits")
+        fig.subplots_adjust(left=0.25, right=0.98, bottom=0.17, top=0.85)
+    return fig, provenance("warm wall time and ideal four-device scaling", table, refits=refits,
+                           timed_passes_per_device_count=data["timed_passes_per_device_count"],
+                           measured_seconds=[one, four], ideal_seconds=ideal, paired_agreement=data["agreement"])

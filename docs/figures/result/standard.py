@@ -6,9 +6,9 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from agreement import batched_fit, convergence, full_mask, synthsr_quality
-from recurrence import fragile_clusters, refit_batching
-from runtime import reference_scaling, variants, voxel_scaling
-from style import settings
+from recurrence import fragile_clusters, refit_batching, stability_bins
+from runtime import four_gpu_refits, reference_scaling, variants, voxel_scaling
+from style import read_json
 
 EXPERIMENTS = {
     "002": (convergence, 16.0),
@@ -20,6 +20,8 @@ EXPERIMENTS = {
     "011": (fragile_clusters, 16.0),
     "013": (refit_batching, 16.0),
     "017": (synthsr_quality, 8.5),
+    "018": (four_gpu_refits, 8.5),
+    "019": (stability_bins, 16.0),
 }
 
 
@@ -46,7 +48,7 @@ def main():
         import matplotlib.pyplot as plt
 
         args.outdir.mkdir(parents=True, exist_ok=True)
-        dpi = settings("plot-style.json")["savefig.dpi"]
+        dpi = read_json("plot-style.json")["savefig.dpi"]
         for experiment in (EXPERIMENTS if args.experiment == "all" else [args.experiment]):
             fig, _ = build_figure(experiment=experiment)
             output = args.outdir / f"exp_voxelwisenormative_{experiment}-result.png"

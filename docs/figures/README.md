@@ -20,5 +20,7 @@ replace `all` with one experiment number, or use `--outdir <directory>` to write
 | [exp_011](../../experiments/exp_voxelwisenormative_011_fragile_clusters/docs/details.md) | [cluster bins](data/fragile-share-no-core.csv): share of initially flagged clusters with no voxel flagged in all 64 refits. |
 | [exp_013](../../experiments/exp_voxelwisenormative_013_gpu_headroom/docs/details.md) | [batch sweep](data/refit-batching.csv): timed work divided by 64 refits, cumulative allocator peak and disagreements with batch size one. |
 | [exp_017](../../experiments/exp_voxelwisenormative_017_ixi_synthsr_reference/docs/details.md) | [map quality](data/synthsr-map-quality.csv): two group medians; each map is compared with the mean of the other maps on the same mask. |
+| [exp_018](../../experiments/exp_voxelwisenormative_018_four_gpu_refits/docs/details.md) | [aggregate receipt](data/four-gpu-refits.json): warm times and paired agreement for the same 64 refits on one and four A100s; ideal time is one-device time ÷ four. |
+| [exp_019](../../experiments/exp_voxelwisenormative_019_zbin_stability/docs/details.md) | [aggregate receipt](data/zbin-stability.json): share of original flags recurring in fewer than 52 of 64 refits, pooled by original magnitude; the zoom shows the two higher bins. |
 
 see [results and denominators](../004-results.md). the [social preview builder](logo/render-logo.sh) centres the existing voxel-brain icon with ImageMagick; see [figure marks](../licences.md#figure-marks).

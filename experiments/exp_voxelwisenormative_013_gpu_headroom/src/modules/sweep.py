@@ -10,17 +10,16 @@ from pathlib import Path
 import numpy as np
 
 from shared.voxelwisenormative.batched_blr import N_ITER
-from src.utils.receipts import peak_rss_bytes, publish, runtime
+from shared.voxelwisenormative.receipts import peak_rss_bytes, publish
+from shared.voxelwisenormative.refit_batch import THRESHOLD, Batch, Batcher, agreement, original_check
+from shared.voxelwisenormative.refit_inputs import DRAW_SEED, read_ixi, synthetic
+from shared.voxelwisenormative.refit_trace import capture
+from src.utils.receipts import runtime
 
-from .batched import Batch, Batcher
 from .gpu_samples import Sampler
-from .inputs import DRAW_SEED, Inputs, read_ixi, synthetic
-from .trace import capture
 
 logger = logging.getLogger(__name__)
 K_VALUES = (1, 2, 4, 8, 16, 32, 64)
-Z_TOLERANCE = 0.01  # GPU agreement with the converged PCNtoolkit reference, as exp_010
-THRESHOLD = 1.96
 MEMORY_KEYS = ("peak_bytes_in_use", "bytes_in_use", "peak_pool_bytes", "bytes_limit")
 
 
@@ -39,28 +38,6 @@ def memory(device) -> dict | None:
     """Allocator counters; the peak is cumulative over the process, so passes run in ascending K."""
     stats = device.memory_stats()
     return None if stats is None else {key: int(stats[key]) for key in MEMORY_KEYS if key in stats}
-
-
-def agreement(z: np.ndarray, ref: np.ndarray) -> tuple[bool, int, float, int]:
-    """Bitwise equality, differing elements, max |Δz| and |z|>1.96 disagreements for one refit."""
-    if np.array_equal(z, ref):
-        return True, 0, 0.0, 0
-    flips = np.count_nonzero((np.abs(z) > THRESHOLD) != (np.abs(ref) > THRESHOLD))
-    return False, int(np.count_nonzero(z != ref)), float(np.max(np.abs(z.astype(np.float64) - ref))), int(flips)
-
-
-def original_check(batcher: Batcher, inputs: Inputs) -> dict:
-    """Fit every reference row once and check the pinned PCNtoolkit voxels before the sweep."""
-    batch = batcher.run(np.asarray([len(inputs.rows)]))
-    report = {"seconds_including_first_run": batch.compute_seconds + batch.gather_seconds,
-              "flags": int(np.count_nonzero(np.abs(batch.z) > THRESHOLD)), "pinned_z_max_abs_delta": None}
-    if inputs.pinned_voxels is not None:
-        error = float(np.max(np.abs(batch.z[0][:, inputs.pinned_voxels] - inputs.pinned_z)))
-        if not error <= Z_TOLERANCE:
-            raise ValueError(f"original fit max |Δz| {error:g} against PCNtoolkit exceeds {Z_TOLERANCE}")
-        report["pinned_z_max_abs_delta"] = error
-    logger.info("original fit: %s", report)
-    return report
 
 
 def one_pass(batcher: Batcher, label: str, k: int, reference: np.ndarray, ref_steps: np.ndarray) -> dict:

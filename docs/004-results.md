@@ -11,6 +11,10 @@
 
 both CPU samples ran on one Intel Icelake core of the cluster. PCNtoolkit timings include fit and prediction, not setup and imports. the A100 values are medians of three warm fits, including transfers and score collection but not compilation or input setup. multiply CPU seconds per sampled voxel by the full mask width, then compare in the same units. we did not time a full-mask single-core fit. the figure offsets the two markers within each design for legibility and does not connect the designs.
 
+## scaling to four A100s
+
+[exp_018](../experiments/exp_voxelwisenormative_018_four_gpu_refits/README.md) ran the same 64 refits on one and four A100s on a single Hugging Face Jobs node. four devices took 38.915 s versus 151.251 s on one (3.887×). all 1,196,187,264 paired z-scores had identical bits. these are one warm pass per device count, including transfer to the host. [aggregate receipt](figures/data/four-gpu-refits.json)
+
 ## numerical agreement
 
 | comparison | paired sample | absolute z-score difference |
@@ -32,6 +36,8 @@ an original flag is a held-out scan–voxel pair with `|z| > 1.96` before resamp
 | [exp_011, fold 0](../experiments/exp_voxelwisenormative_011_fragile_clusters/docs/details.md) | flagged in all 64 refits | 416,394 / 927,451 kept (44.9%) |
 
 these are separate resampling runs, not shares of all voxels. the [cluster plot](figures/data/fragile-share-no-core.csv) uses a different denominator: initially flagged clusters, pooled by size, using 26-neighbour connectivity. a cluster has a core if at least one voxel in it is flagged in all 64 refits.
+
+[exp_019](../experiments/exp_voxelwisenormative_019_zbin_stability/README.md) reproduced the exp_010 totals with its site-stratified draws. of the original flags in each magnitude bin, 29.8875% were unstable for 1.96 < |z| < 2.5, 0.0259% for 2.5 ≤ |z| < 3.1, and 0% for |z| ≥ 3.1. unstable here means fewer than 52 of 64 recurrences. [aggregate receipt](figures/data/zbin-stability.json)
 
 ## other results
 

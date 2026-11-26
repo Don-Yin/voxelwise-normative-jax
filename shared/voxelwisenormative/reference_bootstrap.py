@@ -4,15 +4,15 @@ from __future__ import annotations
 
 import logging
 import time
+from collections.abc import Callable
 from pathlib import Path
 
 import numpy as np
 
-from src.utils.measure import peak_rss_bytes, publish, runtime
-
-from .cohorts import bootstrap_draw, load_cohort
-from .gpu import Z_TOLERANCE, chunk_width, memory, open_fitter, prepare, scores
-from .grid import CHAINS, MASK_VOXELS, MIN_RECUR, TRIALS, Z_THRESHOLD, Cell
+from .receipts import peak_rss_bytes, publish, runtime
+from .reference_cohort import bootstrap_draw, load_cohort
+from .reference_fit import Z_TOLERANCE, chunk_width, memory, open_fitter, prepare, scores
+from .reference_grid import CHAINS, MASK_VOXELS, MIN_RECUR, TRIALS, Z_THRESHOLD, Cell
 
 logger = logging.getLogger(__name__)
 BOOTSTRAP_SEED = 20261124
@@ -34,8 +34,11 @@ def instability(baseline: np.ndarray, recurrence: np.ndarray) -> dict:
             "per_person_fraction_p10_p50_p90": np.quantile(fractions, (0.1, 0.5, 0.9)).tolist()}
 
 
-def worker(cell: Cell, chain: int, out: Path, *, smoke: bool = False) -> Path:
-    """Score identical held-outs across 64 (real) resamples and one original fit."""
+def worker(
+    cell: Cell, chain: int, out: Path, *, smoke: bool = False,
+    summarize_magnitudes: Callable[[np.ndarray, np.ndarray, np.ndarray], list[dict]] | None = None,
+) -> Path:
+    """Stream 64 refits; optionally summarise the original |z| values at flagged positions."""
     logger.info("start bootstrap %s chain=%d smoke=%s output=%s", cell.label, chain, smoke, out)
     kernel, device, version = open_fitter(smoke=smoke)
     cohort = load_cohort(cell, chain)
@@ -45,7 +48,7 @@ def worker(cell: Cell, chain: int, out: Path, *, smoke: bool = False) -> Path:
     basis = cohort.basis()
     rng = np.random.default_rng([BOOTSTRAP_SEED, CHAINS[chain], cell.n])
     counts = np.zeros((len(cohort.test), len(voxels)), dtype=np.uint8)
-    baseline = None
+    baseline = original_abs_flags = None
     timings = []
     pinned_error = None
     for i in range(trials + 1):
@@ -57,6 +60,8 @@ def worker(cell: Cell, chain: int, out: Path, *, smoke: bool = False) -> Path:
         flags = np.abs(z) > Z_THRESHOLD
         if i == 0:
             baseline = flags
+            if summarize_magnitudes is not None:
+                original_abs_flags = np.abs(z[flags])
             if cohort.reference is not None:
                 pinned_error = cohort.reference.max_delta(voxels, z)
                 if pinned_error > Z_TOLERANCE:
@@ -72,6 +77,10 @@ def worker(cell: Cell, chain: int, out: Path, *, smoke: bool = False) -> Path:
         raise RuntimeError("bootstrap finished without an original fit")
     summary = ({"baseline_flags": int(baseline.sum()), "max_recurrence": int(counts.max())}
                if smoke else instability(baseline, counts))
+    if summarize_magnitudes is not None:
+        if original_abs_flags is None:
+            raise RuntimeError("bootstrap did not retain the original flagged magnitudes")
+        summary["baseline_abs_z_bins"] = summarize_magnitudes(baseline, original_abs_flags, counts)
     return publish(out, {"schema_version": 1, "workload": "bootstrap", "dataset": cell.dataset,
                          "n": cell.n, "n_test": len(cohort.test), "columns": len(voxels), "precision": "float64",
                          "device": device.device_kind, "jax": version, "chunk": width, "chain": chain,

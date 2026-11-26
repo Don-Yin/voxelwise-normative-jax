@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "mode": "ixi-cuda",
+  "precision": "float64",
+  "jax_version": "0.12.1",
+  "references": 450,
+  "held_out": 113,
+  "voxels": 165402,
+  "refits": 64,
+  "draw_seed": 20261121,
+  "chunk_widths": [
+    32768,
+    32768,
+    32768,
+    32768,
+    32768,
+    1562
+  ],
+  "device": "NVIDIA A100-SXM4-80GB",
+  "platform": "Hugging Face Jobs",
+  "timed_passes_per_device_count": 1,
+  "one_device": {
+    "wall_seconds": 151.25114216498332,
+    "refits_per_second": 0.4231373005447417,
+    "refits_per_device": [
+      64
+    ]
+  },
+  "four_devices": {
+    "wall_seconds": 38.9149524680106,
+    "refits_per_second": 1.644612056319744,
+    "refits_per_device": [
+      16,
+      16,
+      16,
+      16
+    ]
+  },
+  "speedup": 3.8867101865103617,
+  "parallel_efficiency": 0.9716775466275904,
+  "agreement": {
+    "compared_scores": 1196187264,
+    "bitwise_equal_refits": 64,
+    "differing_elements": 0,
+    "max_abs_dz": 0,
+    "flag_disagreements": 0,
+    "z_threshold": 1.96,
+    "max_abs_dz_allowed": 1e-8,
+    "passed": true
+  },
+  "original_fit": {
+    "pinned_z_max_abs_delta": 0.001104178711451853,
+    "pinned_z_max_abs_delta_allowed": 0.01
+  },
+  "one_chunk_trace": {
+    "draw_index": 0,
+    "chunk_index": 0,
+    "width": 32768,
+    "busy_fraction": 0.9760568701258779,
+    "kernel_count": 4621,
+    "kernel_duration_us": 444973.26199999714,
+    "repeated_newton_groups": {
+      "hlo_labels": [
+        "command_buffer_21",
+        "command_buffer_51"
+      ],
+      "cycles": 102,
+      "total_us": 434578.7099999991,
+      "fraction_of_kernel_duration": 0.9766400525881528
+    },
+    "longest_kernel_by_total_time": {
+      "hlo_label": "command_buffer_21",
+      "kernel_name": "input_concatenate_fusion",
+      "calls": 102,
+      "total_us": 41894.38699999999,
+      "fraction_of_kernel_duration": 0.09415034694826283
+    }
+  }
+}

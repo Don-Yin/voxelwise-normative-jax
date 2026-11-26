@@ -27,13 +27,16 @@ def provenance(job, *tables, **details):
     return {"scientific_job": job, "table_sha256": sources, **details}
 
 
-def settings(name):
-    """Read the named figure settings or report the input that could not be read."""
+def read_json(name):
+    """Read a style or aggregate receipt object, naming the input on failure."""
     source = DATA / name
     try:
-        return json.loads(source.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as error:
-        raise ValueError(f"cannot read figure settings {source}: {error}") from error
+        value = json.loads(source.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as error:
+        raise ValueError(f"cannot read figure input {source}: {error}") from error
+    if not isinstance(value, dict):
+        raise ValueError(f"expected a JSON object in figure input {source}")
+    return value
 
 
 @contextmanager
@@ -41,7 +44,7 @@ def canvas(*args, width, height, **kwargs):
     """Build the figure at its display size using the shipped style settings."""
     import matplotlib.pyplot as plt
 
-    with plt.rc_context(settings("plot-style.json")):
+    with plt.rc_context(read_json("plot-style.json")):
         yield plt.subplots(*args, figsize=(width / 2.54, height / 2.54), **kwargs)
 
 
