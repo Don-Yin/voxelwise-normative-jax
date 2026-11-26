@@ -30,13 +30,39 @@ rng = np.random.default_rng(0)
 exposure = np.linspace(-1.0, 1.0, 64)
 x = np.column_stack((rng.normal(size=64), exposure))
 batch = np.resize(["lab-a", "lab-b", "lab-c"], 64)
-y = exposure[:, None] * np.array([0.6, -0.3]) + rng.normal(size=(64, 2))
+y = exposure[:, None] * np.array([0.6, -0.3]) + np.exp(exposure[:, None]) * rng.normal(size=(64, 2))
 held = np.arange(64) % 4 == 0
 z = fit_score(x, y, held, batch=batch, spline_column=1, chunk=2)
 assert z.shape == y[held].shape and np.isfinite(z).all()
+# Fit noise precision per response from the linear covariates and an intercept.
+z_hetero = fit_score(x, y, held, batch=batch, spline_column=1, heteroskedastic=True, chunk=2)
+assert z_hetero.shape == z.shape and np.isfinite(z_hetero).all()
+# Automatic relevance determination: one prior precision per coefficient in the mean model.
+z_ard = fit_score(x, y, held, batch=batch, spline_column=1, ard=True, chunk=2)
+assert z_ard.shape == z.shape and np.isfinite(z_ard).all()
 print(z.shape)
 ```
 <!-- /readme-example -->
+
+## with <img src="docs/assets/pcntoolkit-icon.png" alt="" height="24"> PCNtoolkit
+
+`fit_score` fits warped Bayesian linear regression (`BLR` in [PCNtoolkit](https://github.com/predictive-clinical-neuroscience/PCNtoolkit)): default, `heteroskedastic=True` or `ard=True`. independent fits with `ard=True` can give different z-scores ([experiments](experiments/README.md)).
+
+`export_pcntoolkit` saves a default fit to a new folder that PCNtoolkit loads ([discussion](https://github.com/predictive-clinical-neuroscience/PCNtoolkit/issues/654)). install with `python -m pip install '.[pcntoolkit]'`.
+
+```python
+import pcntoolkit
+from shared.voxelwisenormative.basis import Basis
+from shared.voxelwisenormative.batched_blr import design, fit_chunks, make_fitter
+from shared.voxelwisenormative.cohort import standardise
+from shared.voxelwisenormative.pcntoolkit_export import export_pcntoolkit
+
+basis = Basis.fit(x[~held], batch[~held], spline_column=1)
+phi = design(basis.apply(x[~held], batch[~held]), basis.apply(x[held], batch[held]))
+hyp, _, _ = fit_chunks(make_fitter(), phi, *standardise(y, held), chunk=2)
+folder = export_pcntoolkit("pcn-model", basis, hyp, x[~held], y[~held], batch[~held])
+model = pcntoolkit.NormativeModel.load(str(folder))
+```
 
 [licences](docs/licences.md): MIT; optional PCNtoolkit is GPL-3.0-only.
 

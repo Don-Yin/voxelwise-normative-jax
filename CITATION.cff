@@ -2,7 +2,7 @@ cff-version: 1.2.0
 message: "If you use this software, please cite it using this metadata."
 title: "voxelwise-normative-jax"
 type: software
-version: 0.1.0
+version: 0.2.0
 license: MIT
 doi: 10.5281/zenodo.24498156
 repository-code: "https://github.com/Don-Yin/voxelwise-normative-jax"

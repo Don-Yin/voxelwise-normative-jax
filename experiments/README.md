@@ -28,5 +28,8 @@
 | [exp_009 held-out folds](exp_voxelwisenormative_009_crossfit_all_scans/README.md) | — |
 | [exp_011 fragile clusters](exp_voxelwisenormative_011_fragile_clusters/README.md) | <a href="../docs/assets/exp_voxelwisenormative_011-result.png"><img alt="share without an all-refit core by cluster size" src="../docs/assets/exp_voxelwisenormative_011-result.png" width="400"></a> |
 | [exp_017 SynthSR quality](exp_voxelwisenormative_017_ixi_synthsr_reference/README.md) | <a href="../docs/assets/exp_voxelwisenormative_017-result.png"><img alt="median grey-matter map correlation by crop source" src="../docs/assets/exp_voxelwisenormative_017-result.png" width="400"></a> |
+| [exp_020 heteroskedastic BLR](exp_voxelwisenormative_020_heteroskedastic_blr/README.md) | <a href="../docs/assets/exp_voxelwisenormative_020-result.png"><img alt="CPU fit times and held-out score differences" src="../docs/assets/exp_voxelwisenormative_020-result.png" width="400"></a> |
+| [exp_021 automatic relevance determination](exp_voxelwisenormative_021_ard_blr/README.md) | <a href="../docs/assets/exp_voxelwisenormative_021-result.png"><img alt="Mac CPU fit times and held-out score differences" src="../docs/assets/exp_voxelwisenormative_021-result.png" width="400"></a> |
+| [exp_022 PCNtoolkit model export](exp_voxelwisenormative_022_pcntoolkit_export/README.md) | <a href="../docs/assets/exp_voxelwisenormative_022-result.png"><img alt="held-out z differences after export and between independent fits" src="../docs/assets/exp_voxelwisenormative_022-result.png" width="400"></a> |
 
 the z column reports absolute score differences, not correlations. see [results and comparison rules](../docs/004-results.md) · [figure sources](../docs/figures/README.md).

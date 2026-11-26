@@ -93,12 +93,22 @@ def make_fitter(n_iter: int = N_ITER):
     return fit
 
 
-def fit_chunks(fit, d: Design, Y: np.ndarray, Yt: np.ndarray, chunk: int = 32768):
-    """fit every voxel column in chunks; returns numpy (hyp (V,4), objective (V,), z_test (N_test,V))."""
+def fit_chunks(fit, d: Design | tuple[np.ndarray, ...], Y: np.ndarray, Yt: np.ndarray, chunk: int = 32768,
+               *, initial: np.ndarray | None = None):
+    """Fit response columns in chunks; concatenate hyp, objective, z and any voxel-major diagnostics."""
     import jax
 
-    lam, G, H = (jax.device_put(a) for a in (d.lam, d.G, d.H))
-    outs = [fit(lam, G, H, jax.device_put(Y[:, s:s + chunk]), jax.device_put(Yt[:, s:s + chunk]))
-            for s in range(0, Y.shape[1], chunk)]
+    if chunk < 1 or not Y.shape[1]:
+        raise ValueError(f"need a positive chunk size and at least one voxel, got {chunk=} and {Y.shape=}")
+    if initial is not None and (initial.ndim != 2 or initial.shape[0] != Y.shape[1]):
+        raise ValueError(f"initial hyperparameters must be voxel-major for {Y.shape[1]} voxels, got {initial.shape}")
+    arrays = (d.lam, d.G, d.H) if isinstance(d, Design) else d
+    device_design = tuple(jax.device_put(a) for a in arrays)
+    outs = []
+    for s in range(0, Y.shape[1], chunk):
+        sl = slice(s, s + chunk)
+        responses = jax.device_put((Y[:, sl], Yt[:, sl]))
+        starts = () if initial is None else (jax.device_put(initial[sl]),)
+        outs.append(fit(*device_design, *responses, *starts))
     jax.block_until_ready(outs)
-    return tuple(np.concatenate([np.asarray(o[i]) for o in outs], axis=1 if i == 2 else 0) for i in range(3))
+    return tuple(np.concatenate(columns, axis=1 if i == 2 else 0) for i, columns in enumerate(zip(*outs, strict=True)))

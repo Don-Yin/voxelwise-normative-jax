@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+from pathlib import Path
 
 import numpy as np
 
@@ -12,9 +13,9 @@ from .basis import Basis
 IXI_SITES = ("HH", "Guys", "IOP")  # trailing column order of the frozen PCNtoolkit design
 
 
-def load_covariates() -> dict[str, np.ndarray]:
+def load_covariates(*, root: Path | None = None) -> dict[str, np.ndarray]:
     """subject, age, sex and site columns of the voxel matrix rows."""
-    path = resolve(VOXEL_MATRIX, "covariates.tsv")["covariates.tsv"]
+    path = resolve(VOXEL_MATRIX, "covariates.tsv", root=root)["covariates.tsv"]
     with open(path, newline="") as handle:
         rows = list(csv.DictReader(handle, delimiter="\t"))
     return {
@@ -25,9 +26,9 @@ def load_covariates() -> dict[str, np.ndarray]:
     }
 
 
-def load_grey_matter(mmap: bool = False) -> np.ndarray:
+def load_grey_matter(mmap: bool = False, *, root: Path | None = None) -> np.ndarray:
     """float32 (subjects, voxels) grey matter matrix, verified against the manifest."""
-    path = resolve(VOXEL_MATRIX, "gm.npy")["gm.npy"]
+    path = resolve(VOXEL_MATRIX, "gm.npy", root=root)["gm.npy"]
     return np.load(path, mmap_mode="r" if mmap else None)
 
 
