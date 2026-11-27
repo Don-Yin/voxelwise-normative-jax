@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 
 from src.utils.paths import EXPERIMENT_DIR, RESULTS
-from src.utils.profiling import profiled, run_resources
+from src.utils.profiling import profiled
 
 
 def main() -> None:
@@ -16,12 +16,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--artifacts-dir", type=Path, help="directory of frozen artifacts; defaults to this project")
     parser.add_argument("--no-profile", action="store_true", help="skip the default pyinstrument html report")
-    parser.add_argument("--resources", action="store_true", help="log wall time, cpu and peak memory")
     args = parser.parse_args()
     os.environ["JAX_PLATFORMS"] = "cpu"
     sys.path.insert(0, str(EXPERIMENT_DIR.parents[1]))
-    with (run_resources(enabled=args.resources),
-          profiled(None if args.no_profile else RESULTS / "profile" / "run.html")):
+    with profiled(None if args.no_profile else RESULTS / "profile" / "run.html"):
         from src.modules.round_trip import run
 
         run(RESULTS, args.artifacts_dir)

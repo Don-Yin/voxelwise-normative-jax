@@ -99,15 +99,8 @@ From the project root, run the benchmark under the shared timing lock:
 H="$HOME/system-macos/active-work/projects/2026-11-22-hackathon-scientific-parallelization"
 A="$H/experiments/shared/artifacts"
 E=experiments/exp_voxelwisenormative_021_ard_blr
-(
-  lock=/tmp/vnj-bench.lock
-  until mkdir "$lock" 2>/dev/null; do sleep 20; done
-  trap 'rm -f "$lock/owner"; rmdir "$lock"' EXIT
-  printf '%s\n' 01-ard-blr > "$lock/owner"
-  export VNJ_BENCH_LOCK_OWNER=01-ard-blr
-  micromamba run -n voxelwise-normative-jax python -B "$E/run.py" \
-    --artifacts-dir "$A" --no-profile --resources
-)
+VNJ_BENCH_LOCK_OWNER=ard lockf -k /tmp/vnj-bench.lock \
+  micromamba run -n voxelwise-normative-jax python -B "$E/run.py" --artifacts-dir "$A" --no-profile
 ```
 
 `--phase pcn` runs just the reference. `--phase jax` verifies and reuses that reference.

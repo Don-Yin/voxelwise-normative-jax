@@ -5,22 +5,22 @@ from __future__ import annotations
 import json
 import logging
 import time
-from importlib.metadata import version
 from pathlib import Path
 
 import jax
 import numpy as np
 
 from shared.voxelwisenormative import ard_blr
-from shared.voxelwisenormative.batched_blr import PENALTY, fit_chunks
+from shared.voxelwisenormative.batched_blr import fit_chunks
 from shared.voxelwisenormative.pcn_cpu_agreement import (
     FIXED_HYP_TOL,
     OBJECTIVE_TOL,
     Z_TOL,
     agreement,
+    report,
+    time_fits,
 )
 from shared.voxelwisenormative.pcn_cpu_reference import (
-    EPSILON,
     IXIInputs,
     PCNReference,
     cpu_host,
@@ -73,19 +73,7 @@ def benchmark(data: IXIInputs, ref: PCNReference, results: Path, repeats: int, *
     d = ard_blr.design(data.phi, data.phit)
     deploy = ard_blr.make_fitter(n_weights)
     precompute = time.perf_counter() - started
-
-    def timed_fit():
-        """Time fitting all starts and collecting full predictions from the device."""
-        start = time.perf_counter()
-        result = fit_chunks(deploy, d, data.y, data.yt, chunk=n)
-        return result, time.perf_counter() - start
-
-    fitted, first = timed_fit()
-    warm = []
-    for i in range(repeats):
-        fitted, seconds = timed_fit()
-        warm.append(seconds)
-        logger.info("[%d/%d] jax fit and score: %.3f s", i + 1, repeats, seconds)
+    fitted, first, warm = time_fits(deploy, d, data, repeats)
     first_fit, evaluate = ard_blr.make_kernels(n_weights)
     fixed_f, fixed_z = (np.asarray(a) for a in evaluate(ref.hyp, *d, data.y, data.yt))
     logger.info("audit independent all-ones and pcntoolkit-seeded fits for %d voxels", n)
@@ -97,26 +85,9 @@ def benchmark(data: IXIInputs, ref: PCNReference, results: Path, repeats: int, *
         checks[name]["z_disagreement_by_objective"] = _z_tail(ref, fit[1], fit[2])
         checks[name]["objective_jax_minus_pcn_max"] = (fit[1] - ref.objective).max().item()
     restart_gain = ones[1] - fitted[1]
-    median = np.median(warm).item()
-    summary = {
-        "host": host, "profiled": profiled,
-        "dataset": {
-            "archive": str(data.archive), "n_voxels": n, "n_train": len(data.y), "n_test": len(data.yt),
-            "mean_design_columns": n_weights, "mean_design_rank": np.linalg.matrix_rank(data.phi).item(),
-        },
-        "pcntoolkit": {
-            "version": version("pcntoolkit"), "total_seconds": ref.seconds,
-            "fit_seconds_per_voxel_median": np.median(ref.fit_seconds).item(),
-            "score_seconds_per_voxel_median": np.median(ref.score_seconds).item(),
-            "design_max_absdiff": ref.design_error, "l_bfgs_b_epsilon": EPSILON, "penalty": PENALTY,
-            "warnings": ref.warnings,
-        },
-        "jax_cpu": {
-            "first_call_seconds": first, "precompute_seconds": precompute,
-            "first_fit_with_precompute_seconds": first + precompute,
-            "warm_seconds": warm, "warm_seconds_median": median, "warm_speedup_over_pcntoolkit": ref.seconds / median,
-            "max_iters_per_start": ard_blr.MAX_ITERS, "starts": ard_blr.STARTS, "dtype": fitted[0].dtype.name,
-        },
+    summary = report(data, ref, host, profiled, fitted, first, precompute, warm, dataset={},
+                     jax_cpu={"max_iters_per_start": ard_blr.MAX_ITERS, "starts": ard_blr.STARTS})
+    summary |= {
         "agreement": checks["deployed"],
         "initialization_audit": {
             "all_ones": checks["all_ones"], "pcn_seeded": checks["pcn_seeded"],

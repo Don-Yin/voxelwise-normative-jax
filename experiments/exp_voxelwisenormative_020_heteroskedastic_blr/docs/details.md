@@ -74,17 +74,10 @@ export MPLBACKEND=Agg PYTHONDONTWRITEBYTECODE=1 OPENBLAS_NUM_THREADS=1
 export OMP_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1
 run=(micromamba run -n voxelwise-normative-jax python "$E/run.py")
 "${run[@]}" --artifacts-dir "$A" --voxels 4 --repeats 1
-(
-  lock=/tmp/vnj-bench.lock
-  mkdir "$lock" || exit 1
-  trap 'rm -f "$lock/owner"; rmdir "$lock"' EXIT
-  export VNJ_BENCH_LOCK_OWNER=local-reproduction
-  printf '%s\n' "$VNJ_BENCH_LOCK_OWNER" > "$lock/owner"
-  "${run[@]}" --artifacts-dir "$A" --no-profile --resources
-)
+VNJ_BENCH_LOCK_OWNER=local lockf -k /tmp/vnj-bench.lock "${run[@]}" --artifacts-dir "$A" --no-profile
 ```
 
-The first command is a short default-profile check. Use a free CPU timing lock for the unprofiled full run.
+The first command is a short default-profile check. The unprofiled full run waits for the shared CPU timing lock.
 
 Both timers include held-out scoring and result collection, but exclude process startup and reading the input.
 
